@@ -17,10 +17,15 @@ Frontend terdiri dari `main.ts`, `types.ts`, dan `styles.css`. Backend dipisahka
 
 | Command | Kontrak |
 | --- | --- |
-| `inspect_assets(paths, refresh=false)` | Aset dan kesalahan per file; snapshot diperbarui hanya ketika muat ulang diminta. |
+| `inspect_assets(paths, refresh=false)` | `{ assets, folders, files }`: aset unik, root folder/status pemindaian, dan path file impor langsung; pemindaian rekursif tanpa symbolic link. Snapshot diperbarui hanya ketika muat ulang diminta. |
 | `read_preview(path)` | Byte gambar untuk file yang sudah diimpor. |
-| `save_metadata(request)` | Patch per file, mode simpan, folder keluaran opsional, hasil per file. |
+| `save_metadata({ items })` | Patch per file; mode dan root keluaran dibaca dari preferensi sekali per batch; hasil per file. |
+| `load_app_preferences()` | Mode simpan, root keluaran, daftar folder, bahasa, dan tema tersimpan. |
+| `save_app_preferences(saveMode, outputDir, language, theme)` | Simpan mode/tujuan/bahasa/tema tanpa mengubah daftar folder. |
+| `remove_asset_folder(path)` | Hapus referensi root tanpa menghapus file disk. |
 | Event `save_progress` | Jumlah file selesai dan total file. |
+
+Error command IPC dan error per aset/folder memakai `{ key, params, detail }` untuk terjemahan frontend; diagnostik eksternal berada pada `detail`.
 
 Patch yang tidak menyertakan field mempertahankan field tersebut. String kosong atau array kosong menghapus nilai secara disengaja. UI mempertahankan baseline sumber secara terpisah dari salinan yang sudah disimpan sehingga penyimpanan salinan berulang tidak kehilangan perubahan sebelumnya.
 
@@ -29,6 +34,11 @@ Patch yang tidak menyertakan field mempertahankan field tersebut. String kosong 
 1. **Selesai — kerangka dan backend:** struktur root, dokumentasi, command, handler Adobe untuk format biner, dan adapter SVG dengan escaping XML.
 2. **Selesai — editor:** impor file/folder/drop, draft per aset, batch field eksplisit, pengurutan keywords, preview ringan, status, dan kedua mode simpan.
 3. **Selesai — validasi dan distribusi:** roundtrip seluruh format, integritas media, Unicode, backup, izin file, benturan nama, sumber berubah, kegagalan parsial, dan paket RPM. Tinjauan visual mencakup koreksi selector native dan kontras teks.
+4. **Selesai — AI metadata opsional:** generate title/description dan keywords ke draft aset aktif, pengaturan provider dan model, uji koneksi, serta preferensi tersimpan lokal. API key disimpan di credential store OS; permintaan AI hanya berjalan setelah tindakan pengguna.
+
+5. **Selesai — ruang kerja persisten:** dropdown WebKit diperbaiki, status tombol Settings dipulihkan, ikon SVG Lucide lokal, konteks AI per aset, impor folder rekursif/tree berdasarkan format, daftar folder persisten, serta mode dan tujuan simpan melalui Settings.
+
+6. **Selesai — panel dan tampilan:** resize panel dengan pointer/keyboard dan persistensi, satu tombol simpan pengaturan, bahasa ID/EN untuk copy aplikasi dan error IPC terstruktur, tema light/dark, serta migrasi preferensi lama.
 
 Bukti pemeriksaan serta batas pengujian dicatat di [docs/VALIDATION.md](docs/VALIDATION.md). Artefak rilis tersedia di `src-tauri/target/release/`.
 

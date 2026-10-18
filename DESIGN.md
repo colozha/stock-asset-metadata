@@ -137,7 +137,7 @@ components:
 
 A local multimedia metadata workbench with restrained blue-gray materials, thin rules, muted purple selection, and a coral save action. The user's supplied desktop-editor reference is the visual authority.
 
-Density supports repeated editing: compact controls and labels, clear panel boundaries, and space around the asset itself. State changes use text, modest color shifts, and visible focus. Indonesian interface copy keeps the familiar metadata names Title, Description, and Keywords.
+Density supports repeated editing: compact controls and labels, clear panel boundaries, and space around the asset itself. State changes use text, modest color shifts, and visible focus. All application copy supports Indonesian and English. User metadata stays unchanged; generated metadata stays English.
 
 **Key Characteristics:**
 - Cool surfaces and square panel geometry.
@@ -185,9 +185,9 @@ Description and keyword textareas use a readable line height (1.65). Long error 
 
 ## Layout
 
-The native Linux window starts at (1440×900) and has a minimum size of (1024×700). The desktop shell fills the viewport, with outer padding (12px), a toolbar row (61px), a flexible workspace, and a save row (86px), separated by gaps (10px). Toolbar and save controls remain visible while the list and metadata form scroll independently.
+The native Linux window starts at (1440×900) and has a minimum size of (1024×700). The desktop shell fills the viewport, with outer padding (12px), a toolbar row (61px), a flexible workspace, and a save row (86px), separated by gaps (10px). Toolbar and save controls remain visible while the asset tree and metadata form scroll independently. Settings replaces the workspace with an independently scrolling, centered panel (maximum width 760px); the editor footer is hidden there.
 
-The default workspace is three columns: asset list (240px), flexible preview, metadata editor (340px). At widths up to (1180px), side columns become (210px) and (310px); the preview keeps the remaining space. Metadata insets reduce from (16px) to (14px). The preview stage uses (30px) padding by default, (42px) from (1200px), and (20px) in the compact desktop layout.
+The default workspace is three content columns: asset tree (240px), flexible preview, metadata editor (340px), with 7px separators between them. Side panels resize independently through pointer drag and keyboard arrows (Shift: 50px, otherwise 10px; Home/End: limits). Purple hover/focus/drag indicators and a centered grip expose the interaction. Double-click resets default widths; localStorage preserves custom widths. Minimum widths are 200px for the tree, 300px for metadata, and 240px for the preview; the layout clamps to the available window. At widths up to (1180px), side columns become (210px) and (310px); the preview keeps the remaining space. Metadata insets reduce from (16px) to (14px). The preview stage uses (30px) padding by default, (42px) from (1200px), and (20px) in the compact desktop layout.
 
 The base spacing unit is (4px), with observed optical adjustments for compact control gaps and borders. Preserve actual component padding rather than forcing every measurement to a multiple of four. Panel headings align on a common height (52px).
 
@@ -203,7 +203,7 @@ Depth comes from cool surface changes, thin rules, and selected fills. The shipp
 
 Panels, asset rows, keyword rows, badges, and notices are square. Form controls use the minimally softened control radius. The user's approved geometry stays within (0–2px); the implemented reusable radii are the frontmatter's square and control values. Borders are (1px).
 
-Icons are inline SVG line drawings with square caps and miter joins, normally (18px) and (1.6px) stroke. Reorder icons reduce to (14px). Use the actual SVG paths rather than text glyphs or icon fonts.
+Icons use locally embedded official Lucide SVG paths with round caps and joins, normally (18px) and (1.6px) stroke. Reorder icons reduce to (14px). Keep the square panel geometry independent of the icon stroke treatment; use actual SVG paths rather than text glyphs or icon fonts.
 
 ## Components
 
@@ -217,11 +217,17 @@ The primary save button uses coral with dark text, a stronger coral border, and 
 
 Text fields and textareas use white fill, the common border, and compact inset padding. Purple marks carets and keyboard focus. Fieldsets become visibly cool and muted when editing is unavailable. Textareas resize vertically and have a minimum height (70px). Labels remain explicit; placeholders provide examples rather than replacing labels.
 
-The save-mode select uses a controlled inline SVG chevron and `appearance: none`. Its height (33px), line height (31px), and zero vertical padding prevent native WebKit text clipping. Keep this fitted treatment when changing footer copy.
+All selects use a local Lucide SVG chevron, `appearance: none`, explicit height and line height, and zero vertical padding to prevent native WebKit text clipping. Settings selects use height (37px) and line height (35px); compact AI preferences use height (32px) and line height (30px). Preserve this shared treatment across the editor and Settings.
+
+The optional additional-context textarea sits with the AI generation preferences. Its explicit label and helper text identify context for both generation actions on the active asset.
 
 ### Navigation
 
-Asset navigation is a scrollable list of square rows with an independent save-batch checkbox and an asset button. The active row has a pale purple fill and border; the asset button itself stays transparent. A filename, format/size detail, and written draft/save/error state establish the row hierarchy. Long filenames truncate. The active asset and checked save batch remain distinct concepts.
+Asset navigation is a scrollable, recursive folder tree with keyboard-accessible disclosure summaries. Imported roots persist across restarts; subfolders precede format groups, with JPEG grouped as JPG. Each root has a separate remove control that removes it from the workspace without deleting files. Leaf assets retain square rows with an independent save-batch checkbox and an asset button. The active row has a pale purple fill and border; the asset button itself stays transparent. A filename, format/size detail, and written draft/save/error state establish the row hierarchy. Long filenames truncate. The active asset and checked save batch remain distinct concepts.
+
+### Settings / Save Summary
+
+Settings places appearance controls (ID/EN language and light/dark theme) before storage and AI provider controls, using the same cool bordered panels, explicit labels, and restrained spacing. Save mode and the copy-output root are edited in its storage section. One sticky Save settings action commits all sections. Language and theme apply only on save; Back discards unsaved settings. AI remains optional and incomplete provider configuration is not activated. Partial persistence failures identify the saved and failed sections and preserve unsaved inputs. The editor footer presents the saved mode and destination as a read-only summary beside the save action. Long destination paths must remain readable through wrapping or their full-path affordance.
 
 ### Ordered Keywords
 
@@ -246,5 +252,11 @@ Format badges are small square outlined labels. They are informational, not inte
 - **Don't** add decorative shadows, gradients, pill panels, external fonts, or entrance animation.
 - **Don't** use white text on the resting light coral action; white belongs to its darker hover state.
 - **Don't** make preview helper text or keyword ordinals lighter than their documented ink roles.
-- **Don't** restore native select styling or vertical padding that clips the save-mode label.
+- **Don't** restore native select styling or vertical padding that clips select labels.
 - **Don't** infer a mobile product contract from the browser inspection fallback.
+
+## Theme and localization
+
+Light retains the established palette. Dark uses cool charcoal panels, pale blue-gray ink, purple focus/selection, and coral save actions. All component colors use CSS tokens, including browser controls, selection, scrollbars, disabled states, errors, and previews. `data-theme` and `color-scheme` on the document root choose the palette; explicit light is the default rather than the OS preference.
+
+Use the typed ID/EN message dictionary for static and dynamic application copy, accessibility text, dialogs, and backend errors. Language changes rerender labels without changing metadata drafts or keyword order. Source filenames, provider/model identifiers, external diagnostics, and metadata content remain literal.

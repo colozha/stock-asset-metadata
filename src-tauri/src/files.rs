@@ -32,33 +32,62 @@ pub struct Asset {
     pub format: String,
     pub size: u64,
     pub metadata: Metadata,
+    #[serde(serialize_with = "crate::messages::serialize_error")]
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderStatus {
+    pub path: String,
+    #[serde(serialize_with = "crate::messages::serialize_error")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Inspection {
+    pub assets: Vec<Asset>,
+    pub folders: Vec<FolderStatus>,
+    pub files: Vec<String>,
+}
+
 pub fn inspect(paths: Vec<String>) -> (Vec<Asset>, HashMap<PathBuf, FileStamp>) {
+    let (report, stamps) = inspect_with_folders(paths, &[]);
+    (report.assets, stamps)
+}
+
+pub fn inspect_with_folders(
+    paths: Vec<String>,
+    known_folders: &[String],
+) -> (Inspection, HashMap<PathBuf, FileStamp>) {
     let mut candidates = BTreeMap::new();
+    let mut folders = BTreeMap::new();
+    let mut files = Vec::new();
     for name in paths {
-        let path = PathBuf::from(name);
-        let children = if path.is_dir() {
-            match fs::read_dir(&path) {
-                Ok(items) => items.filter_map(Result::ok).map(|i| i.path()).collect(),
-                Err(_) => vec![path],
-            }
-        } else {
-            vec![path]
-        };
-        for path in children {
-            if path.is_dir()
-                || fs::symlink_metadata(&path)
-                    .map(|m| m.file_type().is_symlink())
-                    .unwrap_or(false)
-            {
-                continue;
-            }
-            if metadata::format(&path).is_err() {
-                continue;
-            }
+        let path = PathBuf::from(&name);
+        if fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
+            continue;
+        }
+        if path.is_dir() || known_folders.contains(&name) {
             let canonical = path.canonicalize().unwrap_or(path);
+            let mut errors = Vec::new();
+            collect_files(&canonical, &mut candidates, &mut errors);
+            let path = canonical.to_string_lossy().into_owned();
+            folders.insert(
+                path.clone(),
+                FolderStatus {
+                    path,
+                    error: if errors.is_empty() {
+                        None
+                    } else {
+                        Some(errors.join("\n"))
+                    },
+                },
+            );
+        } else if metadata::format(&path).is_ok() {
+            let canonical = path.canonicalize().unwrap_or(path);
+            files.push(canonical.to_string_lossy().into_owned());
             candidates.insert(canonical.clone(), canonical);
         }
     }
@@ -90,10 +119,86 @@ pub fn inspect(paths: Vec<String>) -> (Vec<Asset>, HashMap<PathBuf, FileStamp>) 
             }
         })
         .collect();
-    (assets, stamps)
+    (
+        Inspection {
+            assets,
+            folders: folders.into_values().collect(),
+            files,
+        },
+        stamps,
+    )
 }
 
-#[derive(Debug, Clone, Deserialize)]
+// Iterative traversal avoids stack overflow for deeply nested input folders.
+fn collect_files(
+    root: &Path,
+    candidates: &mut BTreeMap<PathBuf, PathBuf>,
+    errors: &mut Vec<String>,
+) {
+    let mut pending = vec![root.to_path_buf()];
+    while let Some(directory) = pending.pop() {
+        let entries = match fs::read_dir(&directory) {
+            Ok(entries) => entries,
+            Err(error) => {
+                errors.push(format!("{}: {error}", directory.display()));
+                continue;
+            }
+        };
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) => {
+                    errors.push(format!("{}: {error}", directory.display()));
+                    continue;
+                }
+            };
+            let path = entry.path();
+            let kind = match entry.file_type() {
+                Ok(kind) => kind,
+                Err(error) => {
+                    errors.push(format!("{}: {error}", path.display()));
+                    continue;
+                }
+            };
+            if kind.is_symlink() {
+                continue;
+            }
+            if kind.is_dir() {
+                pending.push(path);
+            } else if kind.is_file() && metadata::format(&path).is_ok() {
+                match path.canonicalize() {
+                    Ok(path) => {
+                        candidates.insert(path.clone(), path);
+                    }
+                    Err(error) => errors.push(format!("{}: {error}", path.display())),
+                }
+            }
+        }
+    }
+}
+
+pub fn format_group(path: &Path) -> AppResult<String> {
+    metadata::format(path).map(|format| {
+        if format == "jpeg" {
+            "jpg".into()
+        } else {
+            format
+        }
+    })
+}
+
+pub fn copy_directory(root: &Path, source: &Path) -> AppResult<PathBuf> {
+    let directory = root.join(format_group(source)?);
+    fs::create_dir_all(&directory).map_err(|error| {
+        format!(
+            "Folder keluaran {} tidak dapat dibuat: {error}",
+            directory.display()
+        )
+    })?;
+    Ok(directory)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SaveMode {
     Copy,
@@ -110,8 +215,6 @@ pub struct SaveItem {
 #[serde(rename_all = "camelCase")]
 pub struct SaveRequest {
     pub items: Vec<SaveItem>,
-    pub mode: SaveMode,
-    pub output_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -121,6 +224,7 @@ pub struct SaveResult {
     pub output_path: Option<String>,
     pub backup_path: Option<String>,
     pub metadata: Option<Metadata>,
+    #[serde(serialize_with = "crate::messages::serialize_error")]
     pub error: Option<String>,
 }
 

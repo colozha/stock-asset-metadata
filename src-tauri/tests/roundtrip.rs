@@ -292,3 +292,76 @@ fn non_utf8_svg_declarations_are_rejected_without_changes() {
     assert!(metadata::write(&path, &value()).is_err());
     assert_eq!(fs::read(&path).unwrap(), source);
 }
+
+#[test]
+fn recursive_folder_import_deduplicates_and_reports_missing_roots() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("assets");
+    let nested = root.join("nested");
+    fs::create_dir_all(&nested).unwrap();
+    let source = nested.join("sample.svg");
+    fs::write(
+        &source,
+        b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0h1\"/></svg>",
+    )
+    .unwrap();
+    fs::write(root.join("unsupported.txt"), b"ignored").unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&root, nested.join("loop")).unwrap();
+    let root_name = root.to_string_lossy().into_owned();
+    let missing = directory
+        .path()
+        .join("missing")
+        .to_string_lossy()
+        .into_owned();
+    let (report, stamps) = files::inspect_with_folders(
+        vec![
+            root_name.clone(),
+            nested.to_string_lossy().into_owned(),
+            source.to_string_lossy().into_owned(),
+            missing.clone(),
+        ],
+        &[missing.clone()],
+    );
+    assert_eq!(report.assets.len(), 1);
+    assert_eq!(stamps.len(), 1);
+    assert_eq!(report.files.len(), 1);
+    assert_eq!(report.folders.len(), 3);
+    assert!(report
+        .folders
+        .iter()
+        .find(|folder| folder.path == missing)
+        .unwrap()
+        .error
+        .is_some());
+    assert!(report
+        .folders
+        .iter()
+        .find(|folder| folder.path == root_name)
+        .unwrap()
+        .error
+        .is_none());
+}
+
+#[test]
+fn copy_directories_group_by_format_and_create_missing_parents() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("Documents/stock-assets");
+    for (name, group) in [
+        ("photo.JPEG", "jpg"),
+        ("photo.jpg", "jpg"),
+        ("image.png", "png"),
+        ("vector.svg", "svg"),
+        ("vector.eps", "eps"),
+        ("clip.mp4", "mp4"),
+        ("clip.mov", "mov"),
+    ] {
+        let target = files::copy_directory(&root, std::path::Path::new(name)).unwrap();
+        assert_eq!(target, root.join(group));
+        assert!(target.is_dir());
+    }
+    assert!(files::copy_directory(&root, std::path::Path::new("unsupported.txt")).is_err());
+    let blocked = directory.path().join("blocked");
+    fs::write(&blocked, b"file").unwrap();
+    assert!(files::copy_directory(&blocked, std::path::Path::new("image.png")).is_err());
+}

@@ -1,6 +1,6 @@
 [package]
 name = "stock-asset-metadata"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local metadata editor for microstock assets"
 edition = "2021"
 rust-version = "1.88"
@@ -16,7 +16,7 @@ required-features = ["desktop"]
 
 [features]
 default = ["desktop"]
-desktop = ["dep:tauri", "dep:tauri-plugin-dialog"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:reqwest", "dep:keyring", "dep:base64"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -24,6 +24,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", optional = true, features = [] }
 tauri-plugin-dialog = { version = "2", optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+keyring = { version = "4.2", optional = true }
+base64 = { version = "0.22", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 xmp_toolkit = "=1.12.1"

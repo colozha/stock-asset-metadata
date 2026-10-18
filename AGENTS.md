@@ -34,6 +34,15 @@
 - Pertahankan urutan keyword dan field yang tidak disertakan dalam patch. Ikuti alur simpan yang memvalidasi hasil sebelum finalisasi; pembaruan sumber memakai backup.
 - Periksa `README.md` dan `docs/VALIDATION.md` untuk batas dukungan dan bukti validasi. Build di browser tidak menggantikan verifikasi IPC Tauri native.
 
+## Bahasa dan tema
+
+- Semua fitur baru wajib menyediakan copy **ID (Indonesia)** dan **EN (English)** pada `src/messages.ts`, termasuk label, tombol, placeholder, tooltip, teks aksesibilitas, status, dialog, progres, dan error. Gunakan `t()` untuk teks dinamis dan atribut `data-i18n` untuk teks statis; jangan menanam copy UI langsung di logika.
+- Kedua terjemahan wajib memiliki parameter interpolasi yang sama. Bahasa UI tidak menerjemahkan isi metadata pengguna, nama/path file, atau nama model/provider; output AI tetap English.
+- Error buatan backend harus terdaftar pada `src-tauri/src/messages.rs` dan kamus ID/EN. IPC mengirim `{ key, params, detail }`; frontend menampilkan melalui `errorText()`. Diagnostik OS/library/provider tetap utuh.
+- Setiap warna antarmuka menggunakan token CSS untuk light dan dark, termasuk hover, fokus, disabled, selection, dan error. Light mempertahankan desain default.
+- Bahasa/tema disimpan melalui satu aksi Simpan pengaturan. Perubahan label/tema harus mempertahankan draft metadata dan urutan keyword. Uji kedua bahasa/tema pada desktop dan ukuran minimum native.
+- Resize panel menggunakan `src/layout.ts`; pertahankan akses keyboard, indikator hover/fokus/drag, batas lebar, dan persistensi lokal.
+
 ## Perintah pemeriksaan
 
 - `npm run check` — pemeriksaan tipe TypeScript.

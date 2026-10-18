@@ -14,21 +14,25 @@ Confirmed from the approved plan: Tauri 2, Rust, Vite, vanilla TypeScript, CSS, 
 Microstock contributors preparing existing photos, vectors, and footage for submission.
 
 ## Product Purpose
-Read and embed title, description, and ordered keywords in JPG/JPEG, PNG, SVG, EPS, MP4, and MOV while protecting original media.
+Read and embed title, description, and ordered keywords in JPG/JPEG, PNG, SVG, EPS, MP4, and MOV while protecting original media. Optional AI generation fills the active asset draft for review before saving.
 
 ## Operating Context
-Offline, local files. Import files or the direct children of a folder. Edit one asset or explicitly apply selected fields to several assets. Drafts live in memory until the application closes.
+Metadata editing uses local files. Import files or recursively scan folders, skipping symbolic links. Folder roots persist locally and are rescanned at startup; direct file imports remain session-only. The sidebar groups assets by folder hierarchy and file format. Edit one asset or explicitly apply selected fields to several assets. Metadata drafts and optional per-asset AI context live in memory until the application closes. AI is optional; only an explicit generation, connection test, or model refresh contacts the configured provider.
 
 ## Capabilities and Constraints
-- Save copies by default; optionally replace originals after creating versioned backups.
+- Resize both side panels with visible pointer and keyboard splitters; widths persist locally and clamp to the desktop viewport.
+- One Settings save applies storage, language (ID/EN), theme (light/dark), and changed AI configuration. Incomplete AI configuration remains optional; generated metadata stays English.
+- Save copies by default to the system Documents directory under stock-assets/{format}, grouping JPEG with JPG; fall back to ~/Documents when the system has no Documents configuration. Save mode and output root persist through Settings; optionally replace originals after creating versioned backups.
+- Remove folder references without deleting disk files; missing folders retain a visible error until restored or removed.
 - Work sequentially in a background worker, reporting results per file.
 - Show lightweight image previews, embedded EPS TIFF previews, and video file information.
 - SVG support is UTF-8. Unsupported or malformed files report errors without modifying sources.
 - CSV agency exports and video playback are outside the first version.
 - Local readback does not establish agency ingestion or an Illustrator open/save roundtrip.
+- Provider endpoint, model, active provider, and generator preferences are stored locally. API keys use the operating system credential store. Explicit AI requests send the prompt, optional per-asset context, and, for supported raster vision models, an image preview to the configured provider.
 
 ## Brand Commitments
-Name: Stock Asset Metadata. Follow the user's supplied desktop-editor reference: square panels, soft cool colors, thin borders, muted purple selection, coral primary action. Indonesian interface with familiar metadata field names.
+Name: Stock Asset Metadata. Follow the user's supplied desktop-editor reference: square panels, soft cool colors, thin borders, muted purple selection, coral primary action. Indonesian and English interfaces, with Indonesian and light as the defaults. The light theme preserves the established palette; dark uses the same visual hierarchy.
 
 ## Product Principles
 - Keep the application and dependency graph small.
