@@ -37,7 +37,7 @@ Data gambar dan stream video tidak melewati encoder ketika metadata disimpan. Th
 | --- | --- | --- |
 | JPG/JPEG | Adobe XMP, termasuk rekonsiliasi metadata legacy oleh SDK | Thumbnail dengan orientasi EXIF |
 | PNG | XMP standar | Thumbnail, termasuk transparansi |
-| SVG UTF-8 | XMP, title/desc dokumen, serta pembacaan Dublin Core sederhana dari vector-pro | Gambar SVG |
+| SVG UTF-8 | XMP, title/desc dokumen, serta pembacaan Dublin Core sederhana | Gambar SVG |
 | EPS | Handler PostScript Adobe; EPS ASCII dan DOS biner | TIFF tertanam jika decoder mendukungnya |
 | MP4/MOV | XMP di container melalui handler MPEG-4/QuickTime Adobe | Informasi nama, format, dan ukuran |
 
@@ -56,13 +56,7 @@ npm run bundle
 
 Pengujian backend dapat dijalankan tanpa WebKitGTK melalui `--no-default-features`. Paket RPM berada di `src-tauri/target/release/bundle/rpm/`; executable berada di `src-tauri/target/release/stock-asset-metadata`.
 
-Untuk menyertakan dua sampel Illustrator lokal tanpa mengubah sumbernya:
-
-```bash
-VECTOR_PRO_EPS_DIR=/home/husain/Documents/Works/Personal/vector-pro cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
-```
-
-Fixture video adalah aset sintetis kecil; pengujian tidak memerlukan FFmpeg sebagai dependensi runtime. Folder sampel eksternal bersifat opsional dan tidak disertakan dalam repository.
+Fixture video adalah aset sintetis kecil; pengujian tidak memerlukan FFmpeg sebagai dependensi runtime.
 
 ## Struktur
 

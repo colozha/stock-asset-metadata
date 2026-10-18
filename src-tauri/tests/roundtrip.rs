@@ -292,27 +292,3 @@ fn non_utf8_svg_declarations_are_rejected_without_changes() {
     assert!(metadata::write(&path, &value()).is_err());
     assert_eq!(fs::read(&path).unwrap(), source);
 }
-
-#[test]
-fn optional_real_illustrator_eps_samples() {
-    let Ok(source) = std::env::var("VECTOR_PRO_EPS_DIR") else {
-        return;
-    };
-    let dir = tempfile::tempdir().unwrap();
-    for name in ["test.eps", "test-roundtrip.eps"] {
-        let original = Path::new(&source).join(name);
-        let before = fs::read(&original).unwrap();
-        let path = dir.path().join(name);
-        fs::copy(&original, &path).unwrap();
-        let tiff = |bytes: &[u8]| {
-            let start = u32::from_le_bytes(bytes[20..24].try_into().unwrap()) as usize;
-            let length = u32::from_le_bytes(bytes[24..28].try_into().unwrap()) as usize;
-            bytes[start..start + length].to_vec()
-        };
-        let preview_before = tiff(&before);
-        metadata::write(&path, &value()).unwrap_or_else(|e| panic!("{name}: {e}"));
-        assert_eq!(metadata::read(&path).unwrap(), value());
-        assert_eq!(tiff(&fs::read(&path).unwrap()), preview_before);
-        assert_eq!(fs::read(&original).unwrap(), before);
-    }
-}

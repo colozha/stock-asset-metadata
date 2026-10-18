@@ -208,7 +208,7 @@ pub fn read(path: &Path) -> AppResult<Metadata> {
             }
         }
     }
-    // vector-pro's early SVG exports store plain Dublin Core children.
+    // Some SVG exports store plain Dublin Core children in the metadata element.
     if let Some(meta) = doc.root_child("metadata") {
         for (index, node) in doc.elements.iter().enumerate() {
             if node.parent != Some(meta) || node.ns != DC {

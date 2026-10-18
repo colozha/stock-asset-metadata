@@ -4,10 +4,10 @@ Tanggal: 18 Oktober 2026. Lingkungan: Fedora 44 x86_64, Rust 1.99, Node.js 22.23
 
 ## Backend
 
-Command berikut lulus: **9 pengujian**, termasuk dua sampel EPS Illustrator lokal dari `vector-pro`. Sampel eksternal hanya dibaca dan disalin ke direktori sementara.
+Command berikut lulus: **8 pengujian**. Pengujian backend menggunakan fixture sintetis yang disimpan di repository atau dibuat pada direktori sementara.
 
 ```bash
-VECTOR_PRO_EPS_DIR=/home/husain/Documents/Works/Personal/vector-pro cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
+cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
 ```
 
 - Enam format: penulisan, pembacaan ulang, Unicode, karakter XML, penulisan berulang, dan penghapusan nilai.
