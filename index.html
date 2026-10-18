@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#EAF1F3" />
+    <link rel="icon" type="image/svg+xml" href="/src-tauri/icons/icon.svg" />
+    <title>Stock Asset Metadata</title>
+  </head>
+  <body>
+    <svg class="icon-defs" aria-hidden="true">
+      <defs>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24">
+          <path d="M3 7V5h6l3 3h9v12H3V7Z" />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path d="M6 3h8l4 4v14H6V3Z M14 3v5h5 M9 12h6M9 16h6" />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path
+            d="M20 7v5h-5M4 17v-5h5M5 8a7 7 0 0 1 12-3l3 4M4 15l3 4a7 7 0 0 0 12-3"
+          />
+        </symbol>
+        <symbol id="i-save" viewBox="0 0 24 24">
+          <path d="M4 3h13l3 3v15H4V3ZM8 3v6h8V3M8 21v-8h8v8" />
+        </symbol>
+        <symbol id="i-image" viewBox="0 0 24 24">
+          <path d="M3 4h18v16H3V4ZM3 17l6-6 4 4 3-3 5 5" />
+          <circle cx="16" cy="8" r="1.5" />
+        </symbol>
+        <symbol id="i-up" viewBox="0 0 24 24">
+          <path d="m6 15 6-6 6 6" />
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24">
+          <path d="m6 9 6 6 6-6" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="m5 12 4 4L19 6" />
+        </symbol>
+        <symbol id="i-video" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" />
+          <path d="m10 8 6 4-6 4V8Z" />
+        </symbol>
+      </defs>
+    </svg>
+    <div id="app" class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          STOCK ASSET<span>/METADATA</span
+          ><small>Persiapkan aset. Simpan ceritanya.</small>
+        </div>
+        <div class="toolbar-actions">
+          <span id="runtime-label" class="runtime-label">Lokal · Offline</span>
+          <button id="add-files">
+            <svg class="icon"><use href="#i-plus" /></svg>Tambah file
+          </button>
+          <button id="add-folder">
+            <svg class="icon"><use href="#i-folder" /></svg>Tambah folder
+          </button>
+          <button
+            id="reload"
+            class="icon-button"
+            title="Muat ulang file terpilih"
+            aria-label="Muat ulang file terpilih"
+            disabled
+          >
+            <svg class="icon"><use href="#i-refresh" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="asset-panel" aria-labelledby="assets-title">
+          <div class="panel-heading">
+            <h1 id="assets-title">Aset Anda</h1>
+            <span id="asset-count" class="count">0</span>
+          </div>
+          <div class="selection-bar">
+            <label
+              ><input id="select-all" type="checkbox" disabled />Pilih
+              semua</label
+            ><span id="selected-count">0 dipilih</span>
+          </div>
+          <div
+            id="asset-list"
+            class="asset-list"
+            aria-label="Daftar aset"
+          ></div>
+          <div id="list-empty" class="list-empty">
+            <svg class="icon"><use href="#i-folder" /></svg>
+            <p>Belum ada aset</p>
+            <span>Tambahkan file atau folder<br />untuk mulai menyunting.</span>
+          </div>
+          <div class="asset-panel-footer">
+            <span class="status-dot"></span>6 format, satu ruang kerja
+          </div>
+        </aside>
+
+        <section class="preview-panel" aria-label="Preview aset">
+          <div class="preview-heading">
+            <div>
+              <strong id="preview-name">Ruang preview</strong
+              ><span id="preview-detail">Pilih aset untuk melihat isinya</span>
+            </div>
+            <span id="preview-format" class="format-badge">PREVIEW</span>
+          </div>
+          <div id="preview-stage" class="preview-stage">
+            <img id="preview-image" alt="" hidden />
+            <div id="preview-empty" class="preview-empty">
+              <div class="empty-file">
+                <svg class="icon"><use id="empty-icon" href="#i-image" /></svg>
+              </div>
+              <h2 id="empty-title">Semua aset, siap diberi cerita.</h2>
+              <p id="empty-description">
+                Tambahkan aset untuk menyunting title, description,<br />dan
+                keywords tanpa mengubah konten media.
+              </p>
+              <button id="empty-add">
+                <svg class="icon"><use href="#i-plus" /></svg>Tambahkan aset
+                pertama
+              </button>
+              <div id="format-list" class="supported-formats">
+                <span>JPG</span><span>PNG</span><span>SVG</span><span>EPS</span
+                ><span>MP4</span><span>MOV</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-footer">
+            <span id="preview-caption"
+              >Aset tetap berada di perangkat Anda.</span
+            ><span id="preview-state">Menunggu aset</span>
+          </div>
+        </section>
+
+        <aside class="metadata-panel" aria-labelledby="metadata-title">
+          <div class="panel-heading">
+            <h2 id="metadata-title">Metadata</h2>
+            <span id="draft-status" class="editor-status">Belum ada aset</span>
+          </div>
+          <div class="metadata-scroll">
+            <p id="editor-help" class="editor-help">
+              Pilih sebuah aset. Metadata yang sudah tertanam akan ditampilkan
+              di sini.
+            </p>
+            <div id="batch-notice" class="batch-notice" hidden>
+              <strong id="batch-title"></strong
+              ><span
+                >Centang field yang ingin diterapkan ke pilihan. Field lain
+                tetap dipertahankan.</span
+              >
+            </div>
+            <form id="metadata-form">
+              <fieldset id="editor-fields" disabled>
+                <div class="field-label">
+                  <label for="title">Title</label
+                  ><span id="title-count">0 karakter</span
+                  ><label class="batch-toggle" hidden
+                    ><input id="apply-title" type="checkbox" />Terapkan</label
+                  >
+                </div>
+                <input
+                  id="title"
+                  type="text"
+                  placeholder="Judul singkat yang menjelaskan aset"
+                  autocomplete="off"
+                />
+                <div class="field-label spaced">
+                  <label for="description">Description</label
+                  ><span id="description-count">0 karakter</span
+                  ><label class="batch-toggle" hidden
+                    ><input
+                      id="apply-description"
+                      type="checkbox"
+                    />Terapkan</label
+                  >
+                </div>
+                <textarea
+                  id="description"
+                  rows="5"
+                  placeholder="Deskripsikan subjek, suasana, dan konteks aset."
+                ></textarea>
+                <div class="field-label spaced">
+                  <label for="keywords">Keywords</label
+                  ><span id="keyword-count">0 keyword</span
+                  ><label class="batch-toggle" hidden
+                    ><input
+                      id="apply-keywords"
+                      type="checkbox"
+                    />Terapkan</label
+                  >
+                </div>
+                <textarea
+                  id="keywords"
+                  rows="3"
+                  placeholder="nature, tropical forest, green, landscape"
+                  spellcheck="false"
+                ></textarea>
+                <p class="field-hint">
+                  Pisahkan dengan koma. Letakkan keyword terpenting di awal.
+                </p>
+                <ol
+                  id="keyword-list"
+                  class="keyword-list"
+                  aria-label="Urutan keywords"
+                ></ol>
+                <button
+                  id="apply-batch"
+                  type="button"
+                  class="apply-button"
+                  hidden
+                >
+                  Terapkan field ke pilihan
+                </button>
+              </fieldset>
+            </form>
+            <div id="file-error" class="inline-error" role="alert" hidden></div>
+            <div id="save-result" class="save-result" hidden></div>
+            <div class="metadata-note">
+              <svg class="icon"><use href="#i-file" /></svg>
+              <p>
+                Metadata ditanamkan di file.<br /><span
+                  >Urutan keywords Anda dipertahankan.</span
+                >
+              </p>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="savebar">
+        <div class="save-intro">
+          <strong>Simpan metadata</strong
+          ><span id="save-hint"
+            >Salinan baru menjaga file sumber tetap utuh.</span
+          >
+        </div>
+        <label class="mode-label" for="save-mode"
+          ><span>Mode penyimpanan</span
+          ><select id="save-mode">
+            <option value="copy">Simpan salinan</option>
+            <option value="replace_with_backup">Ganti sumber + backup</option>
+          </select></label
+        >
+        <button
+          id="choose-output"
+          class="output-button"
+          title="Pilih folder keluaran"
+        >
+          <svg class="icon"><use href="#i-folder" /></svg
+          ><span id="output-label">Pilih folder keluaran</span>
+        </button>
+        <div class="save-progress">
+          <span id="progress-text">0 perubahan</span
+          ><progress
+            id="progress"
+            max="1"
+            value="0"
+            aria-label="Progres penyimpanan"
+            hidden
+          ></progress>
+        </div>
+        <button id="save" class="primary-button" disabled>
+          <svg class="icon"><use href="#i-save" /></svg
+          ><span id="save-label">Simpan metadata</span>
+        </button>
+      </footer>
+      <div
+        id="message"
+        class="message"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

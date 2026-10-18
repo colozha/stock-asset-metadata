@@ -1,0 +1,493 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T03:54:53Z",
+  "title": "Design System: Stock Asset Metadata",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Blue-gray Ground",
+        "tonalRamp": [
+          "oklch(15% 0.00795 216.62)",
+          "oklch(26.4% 0.00795 216.62)",
+          "oklch(37.9% 0.00795 216.62)",
+          "oklch(49.3% 0.00795 216.62)",
+          "oklch(60.7% 0.00795 216.62)",
+          "oklch(72.1% 0.00795 216.62)",
+          "oklch(83.6% 0.00795 216.62)",
+          "oklch(95% 0.00795 216.62)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Cool Panel",
+        "tonalRamp": [
+          "oklch(15% 0.00346 219.53)",
+          "oklch(26.4% 0.00346 219.53)",
+          "oklch(37.9% 0.00346 219.53)",
+          "oklch(49.3% 0.00346 219.53)",
+          "oklch(60.7% 0.00346 219.53)",
+          "oklch(72.1% 0.00346 219.53)",
+          "oklch(83.6% 0.00346 219.53)",
+          "oklch(95% 0.00346 219.53)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Preview Canvas",
+        "tonalRamp": [
+          "oklch(15% 0.02009 212.55)",
+          "oklch(26.4% 0.02009 212.55)",
+          "oklch(37.9% 0.02009 212.55)",
+          "oklch(49.3% 0.02009 212.55)",
+          "oklch(60.7% 0.02009 212.55)",
+          "oklch(72.1% 0.02009 212.55)",
+          "oklch(83.6% 0.02009 212.55)",
+          "oklch(95% 0.02009 212.55)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Panel Rule",
+        "tonalRamp": [
+          "oklch(15% 0.03209 245.22)",
+          "oklch(26.4% 0.03209 245.22)",
+          "oklch(37.9% 0.03209 245.22)",
+          "oklch(49.3% 0.03209 245.22)",
+          "oklch(60.7% 0.03209 245.22)",
+          "oklch(72.1% 0.03209 245.22)",
+          "oklch(83.6% 0.03209 245.22)",
+          "oklch(95% 0.03209 245.22)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.04209 255.44)",
+          "oklch(26.4% 0.04209 255.44)",
+          "oklch(37.9% 0.04209 255.44)",
+          "oklch(49.3% 0.04209 255.44)",
+          "oklch(60.7% 0.04209 255.44)",
+          "oklch(72.1% 0.04209 255.44)",
+          "oklch(83.6% 0.04209 255.44)",
+          "oklch(95% 0.04209 255.44)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.04232 252.37)",
+          "oklch(26.4% 0.04232 252.37)",
+          "oklch(37.9% 0.04232 252.37)",
+          "oklch(49.3% 0.04232 252.37)",
+          "oklch(60.7% 0.04232 252.37)",
+          "oklch(72.1% 0.04232 252.37)",
+          "oklch(83.6% 0.04232 252.37)",
+          "oklch(95% 0.04232 252.37)"
+        ]
+      },
+      "purple": {
+        "role": "secondary",
+        "displayName": "Muted Purple",
+        "tonalRamp": [
+          "oklch(15% 0.09309 297.90)",
+          "oklch(26.4% 0.09309 297.90)",
+          "oklch(37.9% 0.09309 297.90)",
+          "oklch(49.3% 0.09309 297.90)",
+          "oklch(60.7% 0.09309 297.90)",
+          "oklch(72.1% 0.09309 297.90)",
+          "oklch(83.6% 0.09309 297.90)",
+          "oklch(95% 0.09309 297.90)"
+        ]
+      },
+      "coral": {
+        "role": "primary",
+        "displayName": "Coral",
+        "tonalRamp": [
+          "oklch(15% 0.12516 21.10)",
+          "oklch(26.4% 0.12516 21.10)",
+          "oklch(37.9% 0.12516 21.10)",
+          "oklch(49.3% 0.12516 21.10)",
+          "oklch(60.7% 0.12516 21.10)",
+          "oklch(72.1% 0.12516 21.10)",
+          "oklch(83.6% 0.12516 21.10)",
+          "oklch(95% 0.12516 21.10)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "tonalRamp": [
+          "oklch(15% 0.00000 0.00)",
+          "oklch(26.4% 0.00000 0.00)",
+          "oklch(37.9% 0.00000 0.00)",
+          "oklch(49.3% 0.00000 0.00)",
+          "oklch(60.7% 0.00000 0.00)",
+          "oklch(72.1% 0.00000 0.00)",
+          "oklch(83.6% 0.00000 0.00)",
+          "oklch(95% 0.00000 0.00)"
+        ]
+      },
+      "primary-ink": {
+        "role": "primary",
+        "displayName": "Primary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.02111 333.22)",
+          "oklch(26.4% 0.02111 333.22)",
+          "oklch(37.9% 0.02111 333.22)",
+          "oklch(49.3% 0.02111 333.22)",
+          "oklch(60.7% 0.02111 333.22)",
+          "oklch(72.1% 0.02111 333.22)",
+          "oklch(83.6% 0.02111 333.22)",
+          "oklch(95% 0.02111 333.22)"
+        ]
+      },
+      "coral-hover": {
+        "role": "primary",
+        "displayName": "Dark Coral",
+        "tonalRamp": [
+          "oklch(15% 0.13059 19.01)",
+          "oklch(26.4% 0.13059 19.01)",
+          "oklch(37.9% 0.13059 19.01)",
+          "oklch(49.3% 0.13059 19.01)",
+          "oklch(60.7% 0.13059 19.01)",
+          "oklch(72.1% 0.13059 19.01)",
+          "oklch(83.6% 0.13059 19.01)",
+          "oklch(95% 0.13059 19.01)"
+        ]
+      },
+      "primary-disabled": {
+        "role": "primary",
+        "displayName": "Disabled Coral",
+        "tonalRamp": [
+          "oklch(15% 0.04723 18.14)",
+          "oklch(26.4% 0.04723 18.14)",
+          "oklch(37.9% 0.04723 18.14)",
+          "oklch(49.3% 0.04723 18.14)",
+          "oklch(60.7% 0.04723 18.14)",
+          "oklch(72.1% 0.04723 18.14)",
+          "oklch(83.6% 0.04723 18.14)",
+          "oklch(95% 0.04723 18.14)"
+        ]
+      },
+      "primary-disabled-ink": {
+        "role": "primary",
+        "displayName": "Disabled Action Ink",
+        "tonalRamp": [
+          "oklch(15% 0.05872 8.92)",
+          "oklch(26.4% 0.05872 8.92)",
+          "oklch(37.9% 0.05872 8.92)",
+          "oklch(49.3% 0.05872 8.92)",
+          "oklch(60.7% 0.05872 8.92)",
+          "oklch(72.1% 0.05872 8.92)",
+          "oklch(83.6% 0.05872 8.92)",
+          "oklch(95% 0.05872 8.92)"
+        ]
+      },
+      "secondary-hover": {
+        "role": "neutral",
+        "displayName": "Secondary Hover",
+        "tonalRamp": [
+          "oklch(15% 0.01263 236.63)",
+          "oklch(26.4% 0.01263 236.63)",
+          "oklch(37.9% 0.01263 236.63)",
+          "oklch(49.3% 0.01263 236.63)",
+          "oklch(60.7% 0.01263 236.63)",
+          "oklch(72.1% 0.01263 236.63)",
+          "oklch(83.6% 0.01263 236.63)",
+          "oklch(95% 0.01263 236.63)"
+        ]
+      },
+      "secondary-active": {
+        "role": "neutral",
+        "displayName": "Secondary Active",
+        "tonalRamp": [
+          "oklch(15% 0.01785 240.01)",
+          "oklch(26.4% 0.01785 240.01)",
+          "oklch(37.9% 0.01785 240.01)",
+          "oklch(49.3% 0.01785 240.01)",
+          "oklch(60.7% 0.01785 240.01)",
+          "oklch(72.1% 0.01785 240.01)",
+          "oklch(83.6% 0.01785 240.01)",
+          "oklch(95% 0.01785 240.01)"
+        ]
+      },
+      "selected-surface": {
+        "role": "secondary",
+        "displayName": "Selected Surface",
+        "tonalRamp": [
+          "oklch(15% 0.02379 301.93)",
+          "oklch(26.4% 0.02379 301.93)",
+          "oklch(37.9% 0.02379 301.93)",
+          "oklch(49.3% 0.02379 301.93)",
+          "oklch(60.7% 0.02379 301.93)",
+          "oklch(72.1% 0.02379 301.93)",
+          "oklch(83.6% 0.02379 301.93)",
+          "oklch(95% 0.02379 301.93)"
+        ]
+      },
+      "selected-border": {
+        "role": "secondary",
+        "displayName": "Selected Border",
+        "tonalRamp": [
+          "oklch(15% 0.05886 300.95)",
+          "oklch(26.4% 0.05886 300.95)",
+          "oklch(37.9% 0.05886 300.95)",
+          "oklch(49.3% 0.05886 300.95)",
+          "oklch(60.7% 0.05886 300.95)",
+          "oklch(72.1% 0.05886 300.95)",
+          "oklch(83.6% 0.05886 300.95)",
+          "oklch(95% 0.05886 300.95)"
+        ]
+      },
+      "preview-muted": {
+        "role": "neutral",
+        "displayName": "Preview Secondary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.04227 242.61)",
+          "oklch(26.4% 0.04227 242.61)",
+          "oklch(37.9% 0.04227 242.61)",
+          "oklch(49.3% 0.04227 242.61)",
+          "oklch(60.7% 0.04227 242.61)",
+          "oklch(72.1% 0.04227 242.61)",
+          "oklch(83.6% 0.04227 242.61)",
+          "oklch(95% 0.04227 242.61)"
+        ]
+      },
+      "keyword-surface": {
+        "role": "neutral",
+        "displayName": "Keyword Surface",
+        "tonalRamp": [
+          "oklch(15% 0.00252 228.78)",
+          "oklch(26.4% 0.00252 228.78)",
+          "oklch(37.9% 0.00252 228.78)",
+          "oklch(49.3% 0.00252 228.78)",
+          "oklch(60.7% 0.00252 228.78)",
+          "oklch(72.1% 0.00252 228.78)",
+          "oklch(83.6% 0.00252 228.78)",
+          "oklch(95% 0.00252 228.78)"
+        ]
+      },
+      "keyword-border": {
+        "role": "neutral",
+        "displayName": "Keyword Border",
+        "tonalRamp": [
+          "oklch(15% 0.02172 241.41)",
+          "oklch(26.4% 0.02172 241.41)",
+          "oklch(37.9% 0.02172 241.41)",
+          "oklch(49.3% 0.02172 241.41)",
+          "oklch(60.7% 0.02172 241.41)",
+          "oklch(72.1% 0.02172 241.41)",
+          "oklch(83.6% 0.02172 241.41)",
+          "oklch(95% 0.02172 241.41)"
+        ]
+      },
+      "field-disabled": {
+        "role": "neutral",
+        "displayName": "Disabled Field",
+        "tonalRamp": [
+          "oklch(15% 0.00417 236.50)",
+          "oklch(26.4% 0.00417 236.50)",
+          "oklch(37.9% 0.00417 236.50)",
+          "oklch(49.3% 0.00417 236.50)",
+          "oklch(60.7% 0.00417 236.50)",
+          "oklch(72.1% 0.00417 236.50)",
+          "oklch(83.6% 0.00417 236.50)",
+          "oklch(95% 0.00417 236.50)"
+        ]
+      },
+      "modified": {
+        "role": "secondary",
+        "displayName": "Modified Draft",
+        "tonalRamp": [
+          "oklch(15% 0.09819 305.35)",
+          "oklch(26.4% 0.09819 305.35)",
+          "oklch(37.9% 0.09819 305.35)",
+          "oklch(49.3% 0.09819 305.35)",
+          "oklch(60.7% 0.09819 305.35)",
+          "oklch(72.1% 0.09819 305.35)",
+          "oklch(83.6% 0.09819 305.35)",
+          "oklch(95% 0.09819 305.35)"
+        ]
+      },
+      "error": {
+        "role": "neutral",
+        "displayName": "Error",
+        "tonalRamp": [
+          "oklch(15% 0.12102 23.02)",
+          "oklch(26.4% 0.12102 23.02)",
+          "oklch(37.9% 0.12102 23.02)",
+          "oklch(49.3% 0.12102 23.02)",
+          "oklch(60.7% 0.12102 23.02)",
+          "oklch(72.1% 0.12102 23.02)",
+          "oklch(83.6% 0.12102 23.02)",
+          "oklch(95% 0.12102 23.02)"
+        ]
+      },
+      "saved": {
+        "role": "neutral",
+        "displayName": "Saved",
+        "tonalRamp": [
+          "oklch(15% 0.04291 168.69)",
+          "oklch(26.4% 0.04291 168.69)",
+          "oklch(37.9% 0.04291 168.69)",
+          "oklch(49.3% 0.04291 168.69)",
+          "oklch(60.7% 0.04291 168.69)",
+          "oklch(72.1% 0.04291 168.69)",
+          "oklch(83.6% 0.04291 168.69)",
+          "oklch(95% 0.04291 168.69)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default controls and metadata values."
+      },
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "Compact application identifier."
+      },
+      "title": {
+        "displayName": "Panel Title",
+        "purpose": "Asset and metadata panel headings."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata field names and primary save action."
+      },
+      "helper": {
+        "displayName": "Helper",
+        "purpose": "Supporting editor guidance."
+      },
+      "detail": {
+        "displayName": "Detail",
+        "purpose": "Counts, statuses, file details, and keyword ordinals."
+      },
+      "badge": {
+        "displayName": "Format Badge",
+        "purpose": "Short uppercase media-format labels."
+      },
+      "headline": {
+        "displayName": "Empty-state Headline",
+        "purpose": "Central empty-state message at desktop base size."
+      },
+      "headline-wide": {
+        "displayName": "Wide Empty-state Headline",
+        "purpose": "The same message from a viewport width of 1200px."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "background-color 0.14s ease, border-color 0.14s ease",
+        "purpose": "Only button surface and border feedback; no spatial or entrance motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "All transitions are disabled under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "preview-wide-min",
+        "value": "1200px"
+      },
+      {
+        "name": "desktop-compact-max",
+        "value": "1180px"
+      },
+      {
+        "name": "browser-inspection-max",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary save button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The coral save action, including the actual hover, focus, and disabled states.",
+      "html": "<button class=\"ds-primary\" type=\"button\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 3h13l3 3v15H4V3ZM8 3v6h8V3M8 21v-8h8v8\"/></svg><span>Simpan metadata</span></button> <button class=\"ds-primary\" type=\"button\" disabled>Simpan metadata</button>",
+      "css": ".ds-primary{box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:37px;padding:9px 14px;border:1px solid #b55b5e;border-radius:1px;background:var(--coral,#d06d6d);color:#271d25;font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:background-color .14s ease,border-color .14s ease}.ds-primary:active:enabled{background:#d6e2eb}.ds-primary:hover:enabled{background:#bb565b;color:#fff;border-color:#aa494e}.ds-primary:focus-visible{outline:2px solid var(--purple,#7b68a4);outline-offset:2px}.ds-primary:disabled{opacity:1;cursor:default;background:#e5bcbc;color:#6e444b;border-color:#d6aaaa}.ds-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter;flex-shrink:0}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Secondary toolbar button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Cool compact import and editing actions with quiet pointer feedback.",
+      "html": "<button class=\"ds-secondary\" type=\"button\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Tambah file</button>",
+      "css": ".ds-secondary{box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:7px 12px;border:1px solid var(--border,#a7bacb);border-radius:1px;background:var(--panel,#f7fafb);color:var(--text,#2f3f54);font-size:13px;cursor:pointer;transition:background-color .14s ease,border-color .14s ease}.ds-secondary:hover:enabled{background:#e1eaf0;border-color:#768ea7}.ds-secondary:active:enabled{background:#d6e2eb}.ds-secondary:focus-visible{outline:2px solid var(--purple,#7b68a4);outline-offset:2px}.ds-secondary:disabled{opacity:.5;cursor:default}.ds-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter;flex-shrink:0}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none}}"
+    },
+    {
+      "name": "Metadata text field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Explicit metadata label, character count, and a white editing surface.",
+      "html": "<div class=\"ds-field\"><div class=\"ds-field-label\"><label for=\"ds-title\">Title</label><span>15 karakter</span></div><input id=\"ds-title\" type=\"text\" value=\"Tropical forest\" autocomplete=\"off\"/></div>",
+      "css": ".ds-field{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;width:300px;max-width:100%;color:var(--text,#2f3f54)}.ds-field-label{display:flex;align-items:center;gap:5px;margin-bottom:8px}.ds-field-label label{font-size:12px;font-weight:650}.ds-field-label span{margin-left:auto;font-size:10px;color:var(--muted,#506379);font-variant-numeric:tabular-nums}.ds-field input{box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;width:100%;padding:10px 11px;border:1px solid var(--border,#a7bacb);border-radius:1px;background:#fff;color:var(--text,#2f3f54);font-size:13px;caret-color:var(--purple,#7b68a4)}.ds-field input::placeholder{color:#65768a;opacity:1}.ds-field input:focus-visible{outline:2px solid var(--purple,#7b68a4);outline-offset:2px}.ds-field input:disabled{background:#f5f8fa;opacity:1;color:var(--muted,#506379)}"
+    },
+    {
+      "name": "Asset navigation row",
+      "kind": "nav",
+      "refersTo": "asset-row-active",
+      "description": "Independent batch checkbox, active asset fill, and written draft/save state.",
+      "html": "<nav class=\"ds-assets\" aria-label=\"Daftar aset\"><div class=\"ds-asset-row ds-active\"><input type=\"checkbox\" checked aria-label=\"Pilih tropical-forest.jpg\"/><button type=\"button\" class=\"ds-asset-item\" aria-pressed=\"true\"><strong>tropical-forest.jpg</strong><span>JPG · 4.2 MB</span><small class=\"ds-modified\">Belum disimpan</small></button></div><div class=\"ds-asset-row\"><input type=\"checkbox\" aria-label=\"Pilih leaves.png\"/><button type=\"button\" class=\"ds-asset-item\" aria-pressed=\"false\"><strong>leaves.png</strong><span>PNG · 2.1 MB</span><small class=\"ds-ready\">Siap disunting</small></button></div></nav>",
+      "css": ".ds-assets{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;width:226px;background:#edf3f5;color:var(--text,#2f3f54)}.ds-asset-row{display:flex;gap:9px;align-items:flex-start;padding:9px 8px;border:1px solid transparent;margin-bottom:3px}.ds-asset-row.ds-active{background:#e2dced;border-color:#b0a2ca}.ds-asset-row>input{width:13px;height:13px;margin:4px 0 0;flex-shrink:0;accent-color:var(--purple,#7b68a4);cursor:pointer}.ds-asset-row>input:focus-visible,.ds-asset-item:focus-visible{outline:2px solid var(--purple,#7b68a4);outline-offset:2px}.ds-asset-item{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:flex;flex:1;flex-direction:column;align-items:flex-start;justify-content:flex-start;min-width:0;min-height:0;padding:0;gap:4px;background:none;border:0;border-radius:1px;text-align:left;color:var(--text,#2f3f54);cursor:pointer}.ds-asset-item strong{max-width:100%;font-size:12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-weight:650}.ds-asset-item>span{font-size:10px;color:var(--muted,#506379)}.ds-asset-item small{font-size:10px;margin-top:2px}.ds-modified{color:#6f528e}.ds-ready{color:#415d5c}.ds-asset-item:disabled{opacity:.5;cursor:default}"
+    },
+    {
+      "name": "Ordered keyword row",
+      "kind": "custom",
+      "refersTo": "keyword-row",
+      "description": "A readable ordinal and phrase with compact SVG reorder controls.",
+      "html": "<div class=\"ds-keyword-row\"><span class=\"ds-keyword-number\">2</span><span class=\"ds-keyword-text\">tropical forest</span><button type=\"button\" class=\"ds-keyword-move\" aria-label=\"Naikkan tropical forest\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 15 6-6 6 6\"/></svg></button><button type=\"button\" class=\"ds-keyword-move\" aria-label=\"Turunkan tropical forest\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button></div>",
+      "css": ".ds-keyword-row{box-sizing:border-box;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:flex;align-items:center;gap:7px;width:286px;max-width:100%;background:#f8fafb;border:1px solid #bdcbd6;min-height:29px;padding:2px 5px 2px 7px;color:var(--text,#2f3f54)}.ds-keyword-number{color:var(--muted,#506379);min-width:15px;font-size:10px;font-variant-numeric:tabular-nums}.ds-keyword-text{font-size:11px;flex:1;min-width:0;overflow-wrap:anywhere}.ds-keyword-move{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:22px;width:22px;padding:1px;border:0;border-radius:1px;background:none;color:var(--text,#2f3f54);cursor:pointer;transition:background-color .14s ease,border-color .14s ease}.ds-keyword-move:hover:enabled{background:#e1eaf0}.ds-keyword-move:active:enabled{background:#d6e2eb}.ds-keyword-move:focus-visible{outline:2px solid var(--purple,#7b68a4);outline-offset:2px}.ds-keyword-move:disabled{opacity:.5;cursor:default}.ds-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter;flex-shrink:0}.ds-keyword-move>.ds-icon{width:14px;height:14px}@media(prefers-reduced-motion:reduce){.ds-keyword-move{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Cool square panels",
+    "overview": "A local multimedia metadata workbench with restrained blue-gray materials, thin rules, muted purple selection, and a coral save action. The user's supplied desktop-editor reference is the visual authority.\n\nDensity supports repeated editing: compact controls and labels, clear panel boundaries, and space around the asset itself. State changes use text, modest color shifts, and visible focus. Indonesian interface copy keeps the familiar metadata names Title, Description, and Keywords.",
+    "keyCharacteristics": [
+      "Cool surfaces and square panel geometry.",
+      "Compact system typography and one-pixel rules.",
+      "Purple for selection and focus; coral for saving.",
+      "Quiet, explicit feedback for drafts, saves, and errors."
+    ],
+    "rules": [
+      {
+        "name": "The Coral Save Rule",
+        "body": "Reserve the coral fill for the save action; use cool controls for import, navigation, and editing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Working Type Rule",
+        "body": "Separate working roles through size, weight, and spacing within the same system font stack.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Panel Rule",
+        "body": "Define regions with cool surface tones and one-pixel rules; do not add shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the cool square-panel identity and thin structural rules.",
+      "Do reserve purple for selection/focus and coral fill for the save action.",
+      "Do keep the toolbar, asset navigation, central preview, metadata form, and save controls in their established desktop relationship.",
+      "Do retain explicit labels, visible keyboard focus, readable supporting text, and written status.",
+      "Do use real imported media, preserve keyword order, and keep metadata editing available when only the preview fails."
+    ],
+    "donts": [
+      "Don't add decorative shadows, gradients, pill panels, external fonts, or entrance animation.",
+      "Don't use white text on the resting light coral action; white belongs to its darker hover state.",
+      "Don't make preview helper text or keyword ordinals lighter than their documented ink roles.",
+      "Don't restore native select styling or vertical padding that clips the save-mode label.",
+      "Don't infer a mobile product contract from the browser inspection fallback."
+    ]
+  }
+}

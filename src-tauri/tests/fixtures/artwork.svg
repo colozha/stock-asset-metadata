@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 100 100">
+  <title>Legacy title</title>
+  <desc>Legacy description</desc>
+  <metadata><dc:subject>tropical forest, nature</dc:subject><dc:rights>Fixture attribution</dc:rights></metadata>
+  <defs><linearGradient id="paint"><stop stop-color="#7b68a4"/><stop offset="1" stop-color="#d06d6d"/></linearGradient></defs>
+  <g id="artwork" transform="translate(10 10)"><title>Keep shape title</title><path fill="url(#paint)" d="M0 0H80V80H0Z"/></g>
+</svg>

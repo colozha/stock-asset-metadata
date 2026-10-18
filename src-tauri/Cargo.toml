@@ -1,0 +1,37 @@
+[package]
+name = "stock-asset-metadata"
+version = "0.1.0"
+description = "Local metadata editor for microstock assets"
+edition = "2021"
+rust-version = "1.88"
+
+[lib]
+name = "stock_asset_metadata_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "stock-asset-metadata"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = ["desktop"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", optional = true, features = [] }
+tauri-plugin-dialog = { version = "2", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+xmp_toolkit = "=1.12.1"
+quick-xml = "0.42"
+tempfile = "3"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "tiff"] }
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1
