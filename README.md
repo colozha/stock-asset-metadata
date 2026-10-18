@@ -61,7 +61,38 @@ Data gambar dan stream video tidak melewati encoder ketika metadata disimpan. Pr
 
 Jika preview TIFF tertanam EPS tidak dapat didekode, Ghostscript digunakan sebagai fallback. JPEG/PNG dan video dibatasi 128 MiB; fallback Ghostscript memproses EPS hingga 128 MiB; preview TIFF tertanam EPS dibatasi 32 MiB; SVG untuk edit metadata dibatasi 64 MiB. Alokasi decoder dibatasi 512 MiB dan preview dibatasi 1600 piksel pada sisi terpanjang. Render Ghostscript dan FFmpeg berhenti setelah 30 detik. Video tanpa frame yang dapat didekode atau codec yang tidak tersedia tetap bisa disunting metadatanya, tetapi tidak menghasilkan preview.
 
-Validasi lokal belum membuktikan pembacaan portal microstock atau roundtrip buka/simpan di Illustrator. Ekspor CSV per agency dan pemutaran video belum termasuk versi ini.
+Validasi lokal belum membuktikan roundtrip buka/simpan di Illustrator. Ekspor CSV tersedia khusus video MP4/MOV untuk Shutterstock; pemutaran video belum termasuk versi ini.
+
+Untuk MP4 yang metadatanya terbaca Adobe Stock tetapi kosong di Shutterstock,
+tersedia [hasil eksperimen tag native MP4](docs/VALIDATION.md#batas-bukti). Pada uji
+pengguna, kelima varian tetap menghasilkan description/keyword kosong di
+Shutterstock. Belum ada profil tambahan yang terbukti; keberhasilan embedding
+XMP bukan jaminan kompatibilitas portal.
+
+### CSV video untuk Shutterstock
+
+1. Pilih aset yang memiliki perubahan, lalu klik **Simpan metadata** atau tekan **Ctrl+S**.
+   Jika mencakup video MP4/MOV, dialog **Simpan metadata video** muncul sebelum penyimpanan.
+2. Centang **Ekspor CSV Shutterstock**, lalu pilih satu kategori untuk seluruh video dalam batch.
+   Checkbox awalnya mati; tanpa ekspor, metadata tetap dapat disimpan seperti biasa.
+3. Klik **Simpan metadata**. CSV dibuat otomatis di setiap folder output video yang berhasil
+   disimpan, tanpa dialog lokasi. Mode salinan memakai folder format MP4/MOV; mode ganti
+   sumber memakai folder sumber. Gambar tetap disimpan tetapi tidak dimasukkan ke CSV.
+4. Nama default CSV adalah `shutterstock.csv`; jika sudah ada, gunakan `shutterstock_1.csv`,
+   dan seterusnya tanpa menimpa file lama. Baris CSV memakai nama output final, termasuk suffix
+   benturan nama video, serta description dan urutan keyword hasil simpan.
+5. Unggah video terlebih dahulu, lalu gunakan **Upload CSV** pada halaman pengajuan Shutterstock.
+
+CSV berisi `Filename,Description,Keywords,Categories` dalam UTF-8. Deskripsi minimal 5 kata/
+maksimal 2.048 karakter dan 7–50 keyword unik diperlukan; validasi dilakukan sebelum aset
+ditulis jika ekspor aktif. Jika tidak valid, perbaiki draft atau matikan ekspor untuk melanjutkan.
+Batal/Escape membatalkan penyimpanan. Pilihan ekspor dan kategori direset setiap dialog dibuka.
+
+Kegagalan CSV dilaporkan beserta foldernya, terpisah dari hasil simpan aset; video yang sudah
+tersimpan tetap tersedia. CSV hanya mencakup video berhasil dari aksi tersebut dan tidak
+menggabungkan isi CSV lama. Metadata tidak diterjemahkan; Shutterstock meminta description
+dan keyword English. Ekspor agency lain belum disediakan. Lihat
+[panduan Shutterstock](https://submit.shutterstock.com/help/en/articles/10617486-how-do-i-include-existing-metadata-with-my-content-submission).
 
 ## Build dan pemeriksaan
 

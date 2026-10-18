@@ -5,6 +5,16 @@ export interface Metadata {
   keywords: string[];
 }
 export type MetadataPatch = Partial<Metadata>;
+export interface ShutterstockCsvResult {
+  directory: string;
+  outputPath: string | null;
+  rowCount: number;
+  error: AppError | null;
+}
+export interface SaveResponse {
+  results: SaveResult[];
+  csvResults: ShutterstockCsvResult[];
+}
 export interface Asset {
   path: string;
   name: string;

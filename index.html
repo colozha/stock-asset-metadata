@@ -433,6 +433,29 @@
           ><span id="save-label"><span data-i18n="Simpan metadata">Simpan metadata</span></span>
         </button>
       </footer>
+      <dialog id="csv-dialog" class="csv-dialog" aria-labelledby="csv-title" aria-describedby="csv-instructions">
+        <form id="csv-form">
+          <h2 id="csv-title" data-i18n="Simpan metadata video">Simpan metadata video</h2>
+          <p id="csv-summary"></p>
+          <ul id="csv-files" class="csv-files" aria-label="Video untuk Shutterstock" data-i18n-aria-label="Video untuk Shutterstock"></ul>
+          <label class="csv-option" for="csv-enabled">
+            <input id="csv-enabled" type="checkbox" autofocus />
+            <span data-i18n="Ekspor CSV Shutterstock">Ekspor CSV Shutterstock</span>
+          </label>
+          <p class="settings-help" data-i18n="Satu CSV per folder output video. File CSV lama tetap disimpan.">Satu CSV per folder output video. File CSV lama tetap disimpan.</p>
+          <label class="settings-field" for="csv-category">
+            <span data-i18n="Kategori untuk seluruh batch">Kategori untuk seluruh batch</span>
+            <select id="csv-category" disabled><option value="" data-i18n="Pilih kategori">Pilih kategori</option></select>
+          </label>
+          <p id="csv-instructions" class="settings-help" data-i18n="Unggah video terlebih dahulu, lalu impor CSV melalui Upload CSV di Shutterstock.">Unggah video terlebih dahulu, lalu impor CSV melalui Upload CSV di Shutterstock.</p>
+          <p class="settings-help" data-i18n="Metadata tetap dalam bahasa aslinya; Shutterstock meminta deskripsi dan keyword English.">Metadata tetap dalam bahasa aslinya; Shutterstock meminta deskripsi dan keyword English.</p>
+          <p id="csv-error" class="inline-error" role="alert" hidden></p>
+          <div class="csv-actions">
+            <button id="csv-cancel" type="button" data-i18n="Batal">Batal</button>
+            <button id="csv-export" class="primary-button" type="submit" data-i18n="Simpan metadata">Simpan metadata</button>
+          </div>
+        </form>
+      </dialog>
       <div
         id="message"
         class="message"

@@ -61,7 +61,48 @@ Browser plugin tidak menyediakan browser aktif pada lingkungan ini; pemeriksaan 
 - Binary debug Tauri asli melalui `tauri-driver`/WebKitWebDriver memakai XDG config/data/cache terisolasi dan frontend Vite lokal. Timestamp `modifiedAt` cocok dengan filesystem, `createdAt` berupa angka atau null, command dan tombol membuka direktori melalui `xdg-open`, serta direktori hilang mengembalikan error IPC terstruktur tanpa membuat folder. Screenshot native ID/light dan EN/dark pada kedua ukuran tersimpan di `/tmp/stock-request-native-{id,en}-{1440,1024}.png`; screenshot renderer mencakup keempat kombinasi bahasa/tema di `/tmp/stock-request-{id,en}-{light,dark}-{1440,1024}.png`.
 - Hasil AI pada pemeriksaan ini memakai mock; tidak ada permintaan ke provider eksternal.
 
+## Verifikasi alur simpan + CSV Shutterstock
+
+18 Oktober 2026. Verifikasi alur simpan dengan ekspor CSV opsional.
+
+- `npm run build` lulus. Backend tanpa fitur desktop lulus **20 tes** (10 unit,
+  10 integrasi); tes library dengan fitur desktop lulus **18 tes**. Cakupan baru
+  meliputi validasi patch sebelum penulisan, CSV atomik dengan suffix tanpa
+  overwrite, pengelompokan output, pengabaian aset gagal/nonvideo, dan kelanjutan
+  ekspor folder lain setelah satu folder gagal.
+- Binary debug **Tauri asli** dijalankan melalui `tauri-driver`/WebKitWebDriver
+  dengan fixture dan direktori XDG sementara. Tombol simpan dan Ctrl+S membuka
+  popup video; checkbox awalnya mati, kategori wajib hanya ketika ekspor aktif,
+  Batal/Escape membatalkan seluruh aksi, dan gambar saja langsung disimpan.
+- Metadata CSV tidak valid ditolak sebelum folder/file output dibuat. Mematikan
+  ekspor memungkinkan metadata tetap disimpan. Batch campuran menyimpan SVG dan
+  video; CSV hanya memuat video berhasil dan dibaca independen dengan parser
+  Python `csv`. Nama output bersuffix cocok dengan CSV, CSV sebelumnya tetap
+  identik, serta hash semua sumber tetap identik dalam mode salinan.
+- Mode ganti sumber membuat backup yang cocok dengan sumber awal; MP4/MOV pada
+  folder sumber yang sama masuk satu CSV. Konflik perubahan sumber menggagalkan
+  video terkait, sementara aset lain tetap tersimpan dan CSV hanya memuat video
+  yang berhasil.
+- Screenshot native mencakup ID/EN × light/dark pada 1440×900 dan 1024×700.
+  Popup dan tombol berada dalam viewport tanpa overflow horizontal. Pergantian
+  bahasa/tema mempertahankan draft. Satu konfirmasi memastikan ringkasan jumlah
+  aset/video, kategori terpilih, dan footer tidak menampilkan proses sebelum
+  pengguna mengonfirmasi simpan.
+- Tidak ada upload atau validasi portal Shutterstock pada pemeriksaan ini.
+  Paket RPM dan aplikasi terinstal tidak diperbarui oleh perubahan alur ini.
+
+Hasil impor CSV pada portal Shutterstock belum diverifikasi. Ekspor tidak
+mengunggah apa pun atau memanggil provider AI.
+
 ## Distribusi
+
+Paket RPM **0.1.1-1 x86_64** dibangun ulang pada 18 Oktober 2026 untuk fitur
+ekspor CSV Shutterstock. `npm run bundle` lulus; smoke check binary release
+melalui WebKitWebDriver membuka aset dan dialog ekspor dari `tauri://localhost`
+(frontend terbundel). Dependensi RPM tetap Ghostscript, FFmpeg, GTK, dan WebKitGTK;
+ExifTool tidak ditambahkan. Paket berada di
+`src-tauri/target/release/bundle/rpm/Stock Asset Metadata-0.1.1-1.x86_64.rpm`.
+Paket hasil perubahan CSV ini belum dipasang ke sistem.
 
 RPM **0.1.1-1 x86_64** dibangun ulang dan dipasang pada 18 October 2026 16:21 WIB, termasuk opsi hasil AI, sorting per grup, dan tombol direktori output. Instalasi memakai `pkexec rpm -Uvh --replacepkgs`. `rpm -V stock-asset-metadata` bersih; SHA-256 `/usr/bin/stock-asset-metadata` cocok dengan manifest RPM (`b25692d727de7ee48f6774f58c5c25f7a8ca92a9a2827c478c6e55635a211480`). Semua library executable terinstal teresolusi.
 
@@ -81,6 +122,24 @@ Path sementara tersebut hanya diperlukan untuk build pada sesi ini. Untuk lingku
 
 ## Batas bukti
 
+Pada 18 Oktober 2026, pengguna menguji lima varian MP4 pada Shutterstock:
+kontrol XMP, ItemList, UserData parsial, Keys, dan gabungan. Verifikasi lokal
+dengan ExifTool 13.59 memastikan tag yang ditulis terbaca kembali, packet XMP
+dan 40 keyword berurutan tetap utuh, serta payload `mdat` dan sumber identik.
+Seluruh varian pada screenshot pengguna menampilkan description kosong
+(`0/2048`) dan nol keyword (`0/50`). Hasil ini tidak membuktikan bahwa semua
+variasi metadata MP4 ditolak oleh Shutterstock.
+
+Karena tidak ada profil yang berhasil, integrasi writer tambahan dibatalkan
+dan ExifTool tidak menjadi dependensi aplikasi/RPM. Pengguna memilih ekspor CSV
+Shutterstock sebagai solusi terpisah; petunjuk tersedia di README. Hasil portal
+merupakan pengamatan pengguna, bukan pengujian IPC/portal otomatis oleh agent.
+Alat dan panduan eksperimen telah dihapus karena tidak digunakan dalam alur aplikasi.
+
 Preview TIFF palet dengan alpha pada beberapa EPS Illustrator dialihkan ke Ghostscript; EPS tetap bisa tidak memiliki preview bila renderer gagal. Frame video memerlukan codec yang tersedia pada FFmpeg dan aplikasinya tidak menyediakan pemutar video. SVG dibatasi UTF-8.
 
-Belum dilakukan pengujian unggah ke portal microstock, buka/simpan ulang di Illustrator, distribusi selain Fedora 44, atau sistem operasi lain. Pemeriksaan lokal XMP tidak menjamin tiap portal membaca field yang sama.
+Pengujian portal terbatas pada laporan pengguna: Adobe Stock membaca metadata
+MP4 awal, sedangkan Shutterstock tidak membaca metadata kelima varian di atas.
+Belum dilakukan buka/simpan ulang di Illustrator, pengujian distribusi selain
+Fedora 44, atau sistem operasi lain. Pemeriksaan lokal XMP tidak menjamin tiap
+portal membaca field yang sama.

@@ -26,11 +26,12 @@
 - Pembacaan/penulisan XMP dan dukungan format: `src-tauri/src/metadata.rs`; penanganan SVG: `src-tauri/src/svg.rs`.
 - Pemeriksaan aset, deteksi perubahan sumber, penyimpanan salinan/pembaruan sumber, file sementara, dan backup: `src-tauri/src/files.rs`.
 - Thumbnail gambar dan ekstraksi preview EPS: `src-tauri/src/preview.rs`. Video menampilkan informasi file, tanpa pemutar.
+- Ekspor CSV video Shutterstock: `src-tauri/src/shutterstock.rs`, dialog pada `src/main.ts`, dan daftar kategori bersama di `src/shutterstock-categories.json`.
 - Roundtrip dan integritas format: `src-tauri/tests/roundtrip.rs` dan `src-tauri/tests/fixtures/`.
 
 ## Panduan perubahan
 
-- Format yang ditangani adalah JPG/JPEG, PNG, SVG UTF-8, EPS, MP4, dan MOV. CSV agency dan pemutaran video belum termasuk.
+- Format yang ditangani adalah JPG/JPEG, PNG, SVG UTF-8, EPS, MP4, dan MOV. Ekspor CSV khusus Shutterstock tersedia untuk MP4/MOV; ekspor agency lain dan pemutaran video belum termasuk.
 - Pertahankan urutan keyword dan field yang tidak disertakan dalam patch. Ikuti alur simpan yang memvalidasi hasil sebelum finalisasi; pembaruan sumber memakai backup.
 - Periksa `README.md` dan `docs/VALIDATION.md` untuk batas dukungan dan bukti validasi. Build di browser tidak menggantikan verifikasi IPC Tauri native.
 

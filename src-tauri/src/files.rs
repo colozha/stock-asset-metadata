@@ -228,6 +228,14 @@ pub struct SaveItem {
 #[serde(rename_all = "camelCase")]
 pub struct SaveRequest {
     pub items: Vec<SaveItem>,
+    pub shutterstock_category: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveResponse {
+    pub results: Vec<SaveResult>,
+    pub csv_results: Vec<crate::shutterstock::CsvResult>,
 }
 
 #[derive(Debug, Clone, Serialize)]

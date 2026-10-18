@@ -66,6 +66,14 @@ pub fn serialize_error<S: Serializer>(
     error.clone().map(AppError::from).serialize(serializer)
 }
 const MESSAGES: &[(&str, &[&str])] = &[
+    ("Pilih kategori video Shutterstock yang valid.", &["Pilih kategori video Shutterstock yang valid."]),
+    ("Pilih video MP4/MOV untuk diekspor.", &["Pilih video MP4/MOV untuk diekspor."]),
+    ("Nama video CSV tidak valid: {0}", &["Nama video CSV tidak valid: ", ""]),
+    ("Nama file CSV duplikat: {0}. Ekspor batch terpisah atau ubah nama file.", &["Nama file CSV duplikat: ", ". Ekspor batch terpisah atau ubah nama file."]),
+    ("Deskripsi {0} harus berisi minimal 5 kata dan maksimal 2048 karakter.", &["Deskripsi ", " harus berisi minimal 5 kata dan maksimal 2048 karakter."]),
+    ("Keyword {0} harus berisi 7–50 frasa unik, tanpa frasa kosong atau koma.", &["Keyword ", " harus berisi 7–50 frasa unik, tanpa frasa kosong atau koma."]),
+    ("Metadata CSV mengandung karakter kontrol yang tidak valid: {0}", &["Metadata CSV mengandung karakter kontrol yang tidak valid: ", ""]),
+    ("Pilih path absolut dengan ekstensi .csv.", &["Pilih path absolut dengan ekstensi .csv."]),
     ("Direktori output tidak dapat dibuka: {0}", &["Direktori output tidak dapat dibuka: ", ""]),
     ("AI belum menghasilkan title dan description yang lengkap.", &["AI belum menghasilkan title dan description yang lengkap."]),
     ("AI mengembalikan keyword kosong, duplikat, atau berisi koma. Draft tidak diubah.", &["AI mengembalikan keyword kosong, duplikat, atau berisi koma. Draft tidak diubah."]),

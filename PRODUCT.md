@@ -27,7 +27,7 @@ Metadata editing uses local files. Import files or recursively scan folders, ski
 - Work sequentially in a background worker, reporting results per file.
 - Show lightweight image previews, embedded EPS TIFF previews, and video file information.
 - SVG support is UTF-8. Unsupported or malformed files report errors without modifying sources.
-- CSV agency exports and video playback are outside the first version.
+- Offer optional Shutterstock CSV export before saving changed MP4/MOV videos, with one category per batch. Write one CSV per successful video output folder using final filenames and saved metadata; preserve existing CSVs with numbered suffixes. Other agency exports and video playback remain outside this version.
 - Local readback does not establish agency ingestion or an Illustrator open/save roundtrip.
 - Provider endpoint, model, active provider, and generator preferences are stored locally. API keys use the operating system credential store. Explicit AI requests send the prompt, optional per-asset context, and, for supported raster vision models, an image preview to the configured provider.
 

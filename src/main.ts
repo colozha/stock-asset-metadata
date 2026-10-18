@@ -2,6 +2,8 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, confirm } from "@tauri-apps/plugin-dialog";
+import shutterstockCategories from "./shutterstock-categories.json";
+import type { MessageKey } from "./messages";
 import type {
   AppPreferences,
   FolderStatus,
@@ -20,7 +22,7 @@ import type {
   SaveMode,
   Language,
   Theme,
-  SaveResult,
+  SaveResponse,
 } from "./types";
 import "./styles.css";
 import { t, errorText, applyTranslations } from "./i18n";
@@ -41,6 +43,7 @@ let previewCacheStatus: { key: string; params: unknown[]; state: "error" | "succ
 let preferences: AppPreferences | null = null;
 let outputDir: string | null = null;
 let openingOutput = false;
+let csvWriting = false;
 function localChoice<T extends string>(key: string, choices: readonly T[]): T {
   try {
     const value = localStorage.getItem(`stock-asset-metadata.${key}`);
@@ -520,13 +523,13 @@ function render(updateFields = false) {
   const pending = targets().length;
   el<HTMLButtonElement>("save").disabled =
     busy || aiBusy || settingsBusy || !preferences || pending === 0;
-  el("save-label").textContent = busy
+  el("save-label").textContent = busy && (!el<HTMLDialogElement>("csv-dialog").open || csvWriting)
     ? t("Memproses…")
     : mode === "copy"
       ? t("Simpan metadata")
       : t("Simpan + backup");
   if (!busy) el("progress-text").textContent = t("{0} perubahan dipilih", pending);
-  el("progress").hidden = !busy;
+  el("progress").hidden = !busy || (el<HTMLDialogElement>("csv-dialog").open && !csvWriting);
 }
 
 async function loadPreview() {
@@ -683,8 +686,64 @@ async function chooseOutput() {
   }
 }
 
-async function save() {
-  if (!requireDesktop() || busy || aiBusy || !targets().length) return;
+function openVideoSave(videos: AssetDraft[]) {
+  el("csv-summary").textContent = t("{0} aset akan disimpan, termasuk {1} video.", targets().length, videos.length);
+  el("csv-files").replaceChildren(...videos.map((asset) => {
+    const row = document.createElement("li");
+    row.textContent = asset.name;
+    return row;
+  }));
+  el<HTMLInputElement>("csv-enabled").checked = false;
+  const category = el<HTMLSelectElement>("csv-category");
+  category.replaceChildren(new Option(t("Pilih kategori"), ""), ...shutterstockCategories.map(
+    (value) => new Option(t(value as MessageKey), value),
+  ));
+  updateCsvOptions();
+  el("csv-error").hidden = true;
+  busy = true;
+  el<HTMLDialogElement>("csv-dialog").showModal();
+  render(false);
+}
+
+function updateCsvOptions() {
+  const enabled = el<HTMLInputElement>("csv-enabled").checked;
+  const category = el<HTMLSelectElement>("csv-category");
+  category.disabled = csvWriting || !enabled;
+  category.required = enabled;
+  el<HTMLButtonElement>("csv-export").disabled = csvWriting || (enabled && !category.value);
+}
+
+el("csv-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!csvWriting) void save(true);
+});
+el("csv-enabled").addEventListener("change", updateCsvOptions);
+el("csv-category").addEventListener("change", updateCsvOptions);
+el("csv-cancel").addEventListener("click", () => {
+  if (!csvWriting) el<HTMLDialogElement>("csv-dialog").close();
+});
+el("csv-dialog").addEventListener("cancel", (event) => {
+  if (csvWriting) event.preventDefault();
+});
+el("csv-dialog").addEventListener("close", () => {
+  if (!csvWriting) {
+    busy = false;
+    render(false);
+    el("save").focus();
+  }
+});
+
+async function save(confirmed = false) {
+  const dialog = el<HTMLDialogElement>("csv-dialog");
+  if (!requireDesktop() || (busy && !(confirmed && dialog.open && !csvWriting)) || aiBusy || settingsBusy || !targets().length) return;
+  const videos = targets().filter((asset) => ["mp4", "mov"].includes(asset.format));
+  if (videos.length && !confirmed) {
+    openVideoSave(videos);
+    return;
+  }
+  const shutterstockCategory = confirmed && el<HTMLInputElement>("csv-enabled").checked
+    ? el<HTMLSelectElement>("csv-category").value : null;
+  if (confirmed && el<HTMLInputElement>("csv-enabled").checked && !shutterstockCategory) return;
   if (!preferences) return;
   const mode = preferences.saveMode;
   const items = targets().map((asset) => {
@@ -701,14 +760,21 @@ async function save() {
     return { path: asset.path, patch };
   });
   busy = true;
+  csvWriting = true;
+  updateCsvOptions();
+  el<HTMLInputElement>("csv-enabled").disabled = true;
+  el<HTMLButtonElement>("csv-cancel").disabled = true;
+  el("csv-error").hidden = true;
+  el("csv-export").textContent = t("Memproses…");
   el("progress-text").textContent = t("0 / {0} disimpan", items.length);
   el<HTMLProgressElement>("progress").max = items.length;
   el<HTMLProgressElement>("progress").value = 0;
   render();
   try {
-    const results = await invoke<SaveResult[]>("save_metadata", {
-      request: { items },
+    const response = await invoke<SaveResponse>("save_metadata", {
+      request: { items, shutterstockCategory },
     });
+    const { results, csvResults } = response;
     for (const result of results) {
       const asset = assets.get(result.path)!;
       asset.saveError = result.error;
@@ -724,15 +790,26 @@ async function save() {
       }
     }
     const failed = results.filter((r) => r.error).length;
-    message(
-      t("{0} aset tersimpan{1}", results.length - failed, failed ? t(", {0} gagal. Lihat detail pada daftar aset.", failed) : "."),
-      failed > 0,
-    );
+    const summary = t("{0} aset tersimpan{1}", results.length - failed, failed ? t(", {0} gagal. Lihat detail pada daftar aset.", failed) : ".");
+    const csvMessages = csvResults.map((result) => result.error
+      ? t("CSV gagal di {0}: {1}", result.directory, errorText(result.error))
+      : t("CSV tersimpan: {0} ({1} video).", result.outputPath, result.rowCount));
+    if (dialog.open) dialog.close();
+    message([summary, ...csvMessages].join("\n"), failed > 0 || csvResults.some((result) => !!result.error));
   } catch (error) {
-    message(t("Penyimpanan gagal: {0}", errorText(error)), true);
+    if (dialog.open) {
+      el("csv-error").textContent = errorText(error);
+      el("csv-error").hidden = false;
+    } else message(t("Penyimpanan gagal: {0}", errorText(error)), true);
   } finally {
-    busy = false;
+    csvWriting = false;
+    el<HTMLInputElement>("csv-enabled").disabled = false;
+    el<HTMLButtonElement>("csv-cancel").disabled = false;
+    el("csv-export").textContent = t("Simpan metadata");
+    updateCsvOptions();
+    busy = dialog.open;
     render(true);
+    if (!dialog.open) el("save").focus();
   }
 }
 
@@ -1308,6 +1385,7 @@ el("apply-batch").addEventListener("click", () => {
   render(false);
 });
 document.addEventListener("keydown", (event) => {
+  if (el<HTMLDialogElement>("csv-dialog").open) return;
   if (settingsOpen && event.key === "Escape") {
     event.preventDefault();
     closeSettings();

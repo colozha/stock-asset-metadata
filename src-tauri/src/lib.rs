@@ -3,6 +3,7 @@ pub mod messages;
 pub mod metadata;
 pub mod preferences;
 pub mod preview;
+pub mod shutterstock;
 pub mod svg;
 
 #[cfg(feature = "desktop")]
@@ -12,7 +13,7 @@ mod ai;
 mod desktop {
     use super::{
         ai::{self, AiGenerationRequest, AiSettingsInput, ProviderDraft},
-        files::{self, FileStamp, SaveRequest, SaveResult},
+        files::{self, FileStamp, SaveRequest, SaveResponse, SaveResult},
         preferences::{self, Preferences},
         preview,
     };
@@ -227,11 +228,14 @@ mod desktop {
         request: SaveRequest,
         app: tauri::AppHandle,
         state: State<'_, AppState>,
-    ) -> Result<Vec<SaveResult>, super::messages::AppError> {
+    ) -> Result<SaveResponse, super::messages::AppError> {
         let _worker = lock_worker(&state)?;
         let snapshots = state.snapshots.clone();
         let preferences = load_app_preferences(app.clone())?;
         tauri::async_runtime::spawn_blocking(move || {
+            if let Some(category) = &request.shutterstock_category {
+                super::shutterstock::validate_save(category, &request.items)?;
+            }
             let total = request.items.len();
             let mut results = Vec::new();
             for item in request.items {
@@ -284,7 +288,15 @@ mod desktop {
                     serde_json::json!({"completed": results.len(), "total": total}),
                 );
             }
-            Ok::<_, String>(results)
+            let csv_results = request
+                .shutterstock_category
+                .as_deref()
+                .map(|category| super::shutterstock::export_saved(category, &results))
+                .unwrap_or_default();
+            Ok::<_, String>(SaveResponse {
+                results,
+                csv_results,
+            })
         })
         .await
         .map_err(|e| e.to_string())?

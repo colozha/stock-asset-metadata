@@ -21,7 +21,7 @@ Frontend terdiri dari `main.ts`, `types.ts`, dan `styles.css`. Backend dipisahka
 | `read_preview(path)` | Byte gambar untuk file yang sudah diimpor. |
 | `get_preview_cache_size()` | Total byte file cache preview. |
 | `clear_preview_cache()` | Hapus cache preview dan kembalikan jumlah byte yang dihapus. |
-| `save_metadata({ items })` | Patch per file; mode dan root keluaran dibaca dari preferensi sekali per batch; hasil per file. |
+| `save_metadata({ items, shutterstockCategory? })` | Kategori opsional memvalidasi CSV sebelum menulis; hasil `{ results, csvResults }` mencakup aset serta CSV per folder output video. |
 | `load_app_preferences()` | Mode simpan, root keluaran, daftar folder, bahasa, dan tema tersimpan. |
 | `save_app_preferences(saveMode, outputDir, language, theme)` | Simpan mode/tujuan/bahasa/tema tanpa mengubah daftar folder. |
 | `remove_asset_folder(path)` | Hapus referensi root tanpa menghapus file disk. |
@@ -54,4 +54,7 @@ Salin ke file sementara → ubah metadata → tutup penulis dengan pelaporan err
 
 Sampel Illustrator diuji hanya pada salinan sementara; preview TIFF mentah harus identik. Jika preview EPS tertanam tidak dapat didekode, Ghostscript menjadi fallback; format EPS atau codec video yang tidak didukung renderer tetap dapat disunting metadatanya tanpa preview. Kompatibilitas setelah dibuka dan disimpan ulang di Illustrator serta pembacaan metadata oleh portal agency memerlukan pemeriksaan eksternal.
 
-Ekspor CSV dan pemutaran video berada di luar versi pertama; preview video hanya satu frame statis. Tidak ada layanan cloud, database, atau framework UI tambahan.
+Ekspor CSV Shutterstock menjadi opsi pada dialog sebelum menyimpan video MP4/MOV.
+Satu kategori berlaku per aksi; CSV memakai metadata hasil simpan dan nama output final.
+Satu `shutterstock.csv` ditulis atomik tanpa overwrite per folder output, dengan suffix
+bernomor bila perlu. Kegagalan CSV terpisah dari hasil aset dan folder lain tetap diproses.
