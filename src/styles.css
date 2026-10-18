@@ -459,10 +459,9 @@ a {
   text-align: center;
   color: var(--muted);
   padding: 42px 12px;
-  position: absolute;
-  top: 100px;
-  left: 0;
-  right: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   pointer-events: none;
 }
 .list-empty > .icon {
@@ -1237,7 +1236,9 @@ progress::-webkit-progress-value {
 }
 
 /* Shared select geometry keeps text clear of native WebKit control padding. */
-.ai-preferences select {
+.ai-preferences select,
+.ai-result-mode select,
+.asset-sort select {
   height: 32px;
   line-height: 30px;
   padding: 0 26px 0 8px;
@@ -1275,7 +1276,9 @@ progress::-webkit-progress-value {
 .context-field > span { font-size: 11px; font-weight: 600; color: var(--muted); }
 .context-field small { font-size: 10px; font-weight: 400; color: var(--muted); line-height: 1.55; }
 .context-field textarea { font-size: 11px; min-height: 74px; padding: 8px; }
-.save-destination { min-width: 0; flex: 1; display: grid; gap: 5px; font-size: 11px; }
+.save-destination-group { min-width: 0; flex: 1; display: flex; align-items: center; gap: 8px; }
+.save-destination-group > button { flex-shrink: 0; }
+.save-destination { min-width: 0; flex: 0 1 auto; display: grid; gap: 5px; font-size: 11px; }
 .save-destination > span:last-child { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .asset-group { margin: 2px 0; min-width: 0; }
 .asset-group .asset-group { margin-left: 9px; }
@@ -1309,7 +1312,7 @@ progress::-webkit-progress-value {
 .asset-group .asset-row { padding: 7px 4px; gap: 6px; }
 @media (max-width: 900px) {
   .storage-settings { padding: 14px; }
-  .save-destination { flex-basis: 40%; }
+  .save-destination-group { flex-basis: 40%; }
 }
 
 .panel-resizer {
@@ -1385,3 +1388,17 @@ progress::-webkit-progress-value {
 }
 
 .context-field > span > small { margin-inline-start: 4px; }
+
+.asset-sort {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--muted);
+}
+.asset-sort label { grid-column: 1 / -1; font-size: 10px; }
+.asset-sort select { min-width: 0; width: 100%; }
+.asset-sort .icon-button { width: 30px; height: 32px; padding: 5px; }
+.ai-result-mode select { width: 100%; }

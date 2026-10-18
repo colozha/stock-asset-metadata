@@ -31,6 +31,8 @@ pub struct Asset {
     pub name: String,
     pub format: String,
     pub size: u64,
+    pub created_at: Option<u64>,
+    pub modified_at: Option<u64>,
     pub metadata: Metadata,
     #[serde(serialize_with = "crate::messages::serialize_error")]
     pub error: Option<String>,
@@ -105,6 +107,15 @@ pub fn inspect_with_folders(
                 stamps.insert(path.clone(), s);
                 Ok(value)
             });
+            let stat = fs::metadata(&path).ok();
+            let timestamp = |time: std::io::Result<SystemTime>| {
+                time.ok()?
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .ok()?
+                    .as_millis()
+                    .try_into()
+                    .ok()
+            };
             Asset {
                 name: path
                     .file_name()
@@ -113,6 +124,8 @@ pub fn inspect_with_folders(
                     .into_owned(),
                 format: metadata::format(&path).unwrap_or_default(),
                 size,
+                created_at: stat.as_ref().and_then(|s| timestamp(s.created())),
+                modified_at: stat.as_ref().and_then(|s| timestamp(s.modified())),
                 path: path.to_string_lossy().into_owned(),
                 error: result.as_ref().err().cloned(),
                 metadata: result.unwrap_or_default(),

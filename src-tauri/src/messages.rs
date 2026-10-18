@@ -66,6 +66,7 @@ pub fn serialize_error<S: Serializer>(
     error.clone().map(AppError::from).serialize(serializer)
 }
 const MESSAGES: &[(&str, &[&str])] = &[
+    ("Direktori output tidak dapat dibuka: {0}", &["Direktori output tidak dapat dibuka: ", ""]),
     ("AI belum menghasilkan title dan description yang lengkap.", &["AI belum menghasilkan title dan description yang lengkap."]),
     ("AI mengembalikan keyword kosong, duplikat, atau berisi koma. Draft tidak diubah.", &["AI mengembalikan keyword kosong, duplikat, atau berisi koma. Draft tidak diubah."]),
     ("AI mengembalikan {0} dari {1} keyword yang diminta. Draft tidak diubah.", &["AI mengembalikan ", " dari ", " keyword yang diminta. Draft tidak diubah."]),

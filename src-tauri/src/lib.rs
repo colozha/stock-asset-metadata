@@ -112,6 +112,32 @@ mod desktop {
     }
 
     #[tauri::command]
+    async fn open_output_directory(
+        app: tauri::AppHandle,
+    ) -> Result<(), super::messages::AppError> {
+        let directory = load_app_preferences(app)?.output_dir;
+        tauri::async_runtime::spawn_blocking(move || {
+            if !directory.is_dir() {
+                return Err("Folder keluaran tidak tersedia.".to_owned());
+            }
+            let result = std::process::Command::new("xdg-open")
+                .arg(&directory)
+                .output()
+                .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?;
+            if !result.status.success() {
+                return Err(format!(
+                    "Direktori output tidak dapat dibuka: {}",
+                    String::from_utf8_lossy(&result.stderr).trim()
+                ));
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?
+        .map_err(Into::into)
+    }
+
+    #[tauri::command]
     fn save_app_preferences(
         app: tauri::AppHandle,
         save_mode: files::SaveMode,
@@ -372,6 +398,7 @@ mod desktop {
             .invoke_handler(tauri::generate_handler![
                 inspect_assets,
                 load_app_preferences,
+                open_output_directory,
                 save_app_preferences,
                 remove_asset_folder,
                 read_preview,

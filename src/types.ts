@@ -10,6 +10,8 @@ export interface Asset {
   name: string;
   format: string;
   size: number;
+  createdAt: number | null;
+  modifiedAt: number | null;
   metadata: Metadata;
   error: AppError | string | null;
 }

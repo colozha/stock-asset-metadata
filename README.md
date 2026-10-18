@@ -37,6 +37,12 @@ Pengaturan provider tersedia lewat tombol **Settings**. Daftar model dapat dimua
 
 Simpan salinan tidak memperbarui file sumber. Mengganti mode ke pembaruan sumber memperlihatkan kembali perubahan yang belum diterapkan pada sumber tersebut.
 
+Sorting sidebar tersedia melalui **Urutkan** berdasarkan nama, tanggal dibuat, atau tanggal diubah, dengan arah naik/turun. Urutan hanya berlaku di dalam setiap grup format. Tanggal mengikuti filesystem saat impor/muat ulang; tanggal yang tidak tersedia selalu diletakkan terakhir. Kolom dan arah urutan tersimpan lokal.
+
+Pada panel AI, **Hasil judul & deskripsi** menyediakan **Terpisah**, **Gunakan judul**, atau **Gunakan deskripsi**. Dua pilihan terakhir memakai hasil terpilih untuk kedua field setelah generate berhasil. Pilihan tersimpan lokal; perubahan pilihan tidak menyalin draft saat ini dan edit manual tetap bebas.
+
+Footer mode salinan menampilkan **Direktori output** beserta tombol ikon folder untuk membuka root output tersimpan di file manager Linux (`xdg-open`). Direktori yang belum ada dilaporkan sebagai error; folder tetap dibuat oleh alur simpan seperti biasa.
+
 ## Perlindungan file
 
 Setiap penulisan dilakukan pada file sementara di filesystem tujuan. Metadata dibaca kembali dan dibandingkan sebelum hasil difinalisasi. Mode pembaruan membuat backup `file.ext.bak`, lalu `.bak.1`, dan seterusnya. File keluaran yang bertabrakan mendapat suffix `_1`, `_2`, dan seterusnya. Sumber yang berubah sejak diimpor ditolak; gunakan tombol muat ulang setelah memeriksa draft.

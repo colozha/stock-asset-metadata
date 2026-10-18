@@ -53,7 +53,17 @@ Browser plugin tidak menyediakan browser aktif pada lingkungan ini; pemeriksaan 
 - `npm run build` lulus. `npm run bundle` menghasilkan RPM x86_64; `rpm -qp --requires` mengonfirmasi `ghostscript` dan `ffmpeg-free` tercantum sebagai dependensi.
 - Tidak ada permintaan ke provider AI eksternal dalam verifikasi ini. Browser plugin dan Playwright tidak tersedia di lingkungan; pemeriksaan UI memakai WebKitWebDriver pada binary Tauri asli.
 
+## Verifikasi opsi hasil AI, sorting, dan direktori output
+
+- `npm run build` lulus. Tes backend tanpa fitur desktop lulus 16 tes, termasuk pemeriksaan timestamp filesystem dan field IPC `createdAt`/`modifiedAt`; tes library desktop lulus 14 tes. Build debug Tauri lulus dengan sysroot development Fedora yang dijelaskan di bawah.
+- Browser plugin tidak tersedia; pemeriksaan renderer memakai Playwright yang sudah tersedia di cache dengan mock IPC resmi Tauri. Enam kombinasi sorting, urutan angka alami, tanggal kosong/sama, tiga mode hasil AI, kontrol terkunci selama generate, kegagalan AI yang mempertahankan draft, persistensi pilihan, dan fallback preferensi rusak lulus. Pemeriksaan juga mencakup tombol output, error, dan penyembunyiannya pada mode penggantian sumber.
+- ID/EN × light/dark diperiksa pada 1440×900 dan 1024×700, termasuk lebar panel minimum 200/300 px. Draft dan urutan keyword tetap utuh; tidak ditemukan error runtime atau overflow horizontal. Label sorting memakai baris tersendiri agar nama kolom tanggal terbaca pada sidebar minimum; pesan daftar kosong mengikuti alur layout di bawah kontrol sorting.
+- Binary debug Tauri asli melalui `tauri-driver`/WebKitWebDriver memakai XDG config/data/cache terisolasi dan frontend Vite lokal. Timestamp `modifiedAt` cocok dengan filesystem, `createdAt` berupa angka atau null, command dan tombol membuka direktori melalui `xdg-open`, serta direktori hilang mengembalikan error IPC terstruktur tanpa membuat folder. Screenshot native ID/light dan EN/dark pada kedua ukuran tersimpan di `/tmp/stock-request-native-{id,en}-{1440,1024}.png`; screenshot renderer mencakup keempat kombinasi bahasa/tema di `/tmp/stock-request-{id,en}-{light,dark}-{1440,1024}.png`.
+- Hasil AI pada pemeriksaan ini memakai mock; tidak ada permintaan ke provider eksternal.
+
 ## Distribusi
+
+RPM **0.1.1-1 x86_64** dibangun ulang dan dipasang pada 18 October 2026 16:21 WIB, termasuk opsi hasil AI, sorting per grup, dan tombol direktori output. Instalasi memakai `pkexec rpm -Uvh --replacepkgs`. `rpm -V stock-asset-metadata` bersih; SHA-256 `/usr/bin/stock-asset-metadata` cocok dengan manifest RPM (`b25692d727de7ee48f6774f58c5c25f7a8ca92a9a2827c478c6e55635a211480`). Semua library executable terinstal teresolusi.
 
 `npm run bundle` menghasilkan executable dan paket RPM x86_64 pada `src-tauri/target/release/`. Pemeriksaan library executable tidak menemukan dependency yang hilang atau dependency ke sysroot sementara.
 

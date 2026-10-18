@@ -14,6 +14,8 @@
           <path d="M5 12h14" />
   <path d="M12 5v14" />
         </symbol>
+        <symbol id="i-sort-asc" viewBox="0 0 24 24"><path d="m3 8 4-4 4 4M7 4v16M11 12h4M11 16h7M11 20h10" /></symbol>
+        <symbol id="i-sort-desc" viewBox="0 0 24 24"><path d="m3 16 4 4 4-4M7 20V4M11 4h10M11 8h7M11 12h4" /></symbol>
         <symbol id="i-folder" viewBox="0 0 24 24">
           <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
         </symbol>
@@ -127,6 +129,17 @@
               ><input id="select-all" type="checkbox" disabled /><span data-i18n="Pilih semua">Pilih semua</span></label
             ><span id="selected-count"><span data-i18n="0 dipilih">0 dipilih</span></span>
           </div>
+          <div class="asset-sort">
+            <label for="asset-sort" data-i18n="Urutkan">Urutkan</label>
+            <select id="asset-sort">
+              <option value="name" data-i18n="Nama">Nama</option>
+              <option value="createdAt" data-i18n="Tanggal dibuat">Tanggal dibuat</option>
+              <option value="modifiedAt" data-i18n="Tanggal diubah">Tanggal diubah</option>
+            </select>
+            <button id="asset-sort-direction" class="icon-button" type="button" aria-label="Urutan naik; klik untuk menurun" title="Urutan naik; klik untuk menurun">
+              <svg class="icon" aria-hidden="true"><use href="#i-sort-asc" /></svg>
+            </button>
+          </div>
           <div
             id="asset-list"
             class="asset-list"
@@ -206,6 +219,15 @@
                   <input id="keyword-target-count" type="number" min="10" max="50" value="40" disabled />
                 </label>
               </div>
+              <label class="context-field ai-result-mode" for="ai-result-mode">
+                <span data-i18n="Hasil judul & deskripsi">Hasil judul & deskripsi</span>
+                <select id="ai-result-mode" disabled>
+                  <option value="separate" data-i18n="Terpisah">Terpisah</option>
+                  <option value="title" data-i18n="Gunakan judul">Gunakan judul</option>
+                  <option value="description" data-i18n="Gunakan deskripsi">Gunakan deskripsi</option>
+                </select>
+                <small data-i18n="Pilih judul atau deskripsi untuk mengisi kedua field setelah generate.">Pilih judul atau deskripsi untuk mengisi kedua field setelah generate.</small>
+              </label>
               <label class="context-field" for="additional-context">
                 <span><span data-i18n="Konteks tambahan">Konteks tambahan</span><small><span data-i18n="(opsional)">(opsional)</span></small></span>
                 <textarea id="additional-context" rows="3" maxlength="4000" placeholder="Contoh: partikel lembut untuk latar undangan pernikahan." disabled data-i18n-placeholder="Contoh: partikel lembut untuk latar undangan pernikahan."></textarea>
@@ -392,7 +414,10 @@
             ><span data-i18n="Salinan baru menjaga file sumber tetap utuh.">Salinan baru menjaga file sumber tetap utuh.</span></span
           >
         </div>
-        <div class="save-destination"><span id="save-mode-summary"><span data-i18n="Simpan salinan">Simpan salinan</span></span><span id="save-destination-summary"><span data-i18n="Atur tujuan melalui Settings">Atur tujuan melalui Settings</span></span></div>
+        <div class="save-destination-group">
+          <div class="save-destination"><span id="save-mode-summary"><span data-i18n="Direktori output">Direktori output</span></span><span id="save-destination-summary"><span data-i18n="Atur tujuan melalui Settings">Atur tujuan melalui Settings</span></span></div>
+          <button id="open-output" class="icon-button" type="button" disabled title="Buka direktori output" aria-label="Buka direktori output" data-i18n-title="Buka direktori output" data-i18n-aria-label="Buka direktori output"><svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg></button>
+        </div>
         <div class="save-progress">
           <span id="progress-text"><span data-i18n="0 perubahan">0 perubahan</span></span
           ><progress

@@ -281,6 +281,22 @@ fn partial_patch_validation_and_import_errors() {
     assert_eq!(assets.len(), 2);
     assert_eq!(stamps.len(), 1);
     assert_eq!(assets.iter().filter(|a| a.error.is_some()).count(), 1);
+    for asset in &assets {
+        let stat = fs::metadata(&asset.path).unwrap();
+        let milliseconds = |time: std::io::Result<std::time::SystemTime>| {
+            time.ok()?
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()?
+                .as_millis()
+                .try_into()
+                .ok()
+        };
+        assert_eq!(asset.created_at, milliseconds(stat.created()));
+        assert_eq!(asset.modified_at, milliseconds(stat.modified()));
+        let json = serde_json::to_value(asset).unwrap();
+        assert!(json.get("createdAt").is_some());
+        assert!(json.get("modifiedAt").is_some());
+    }
 }
 
 #[test]

@@ -40,6 +40,21 @@ let previewCacheBytes: number | null = null;
 let previewCacheStatus: { key: string; params: unknown[]; state: "error" | "success" | "neutral" } | null = null;
 let preferences: AppPreferences | null = null;
 let outputDir: string | null = null;
+let openingOutput = false;
+function localChoice<T extends string>(key: string, choices: readonly T[]): T {
+  try {
+    const value = localStorage.getItem(`stock-asset-metadata.${key}`);
+    if (choices.includes(value as T)) return value as T;
+  } catch { /* Unavailable storage uses the default. */ }
+  return choices[0];
+}
+function saveLocalChoice(key: string, value: string) {
+  try { localStorage.setItem(`stock-asset-metadata.${key}`, value); }
+  catch { /* Controls still work without persistence. */ }
+}
+let sortField = localChoice("sort-field", ["name", "createdAt", "modifiedAt"] as const);
+let sortDirection = localChoice("sort-direction", ["asc", "desc"] as const);
+let aiResultMode = localChoice("ai-result-mode", ["separate", "title", "description"] as const);
 const folders = new Map<string, FolderStatus>();
 const explicitFiles = new Set<string>();
 const disclosures = new Map<string, boolean>();
@@ -280,6 +295,21 @@ function disclosure(key: string, title: string, count: number, folder = false) {
   return node;
 }
 
+function compareAssets(a: AssetDraft, b: AssetDraft): number {
+  const byName = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  const tie = byName || a.path.localeCompare(b.path);
+  const direction = sortDirection === "asc" ? 1 : -1;
+  if (sortField === "name") return direction * tie;
+  const left = a[sortField];
+  const right = b[sortField];
+  if (left == null || right == null) {
+    if (left != null) return -1;
+    if (right != null) return 1;
+    return tie;
+  }
+  return direction * (left - right) || tie;
+}
+
 function appendTree(container: HTMLElement, directory: string, items: AssetDraft[]) {
   const subfolders = new Map<string, AssetDraft[]>();
   const formats = new Map<string, AssetDraft[]>();
@@ -298,7 +328,7 @@ function appendTree(container: HTMLElement, directory: string, items: AssetDraft
   }
   for (const [format, children] of [...formats].sort(([a], [b]) => a.localeCompare(b))) {
     const node = disclosure(`format:${directory}:${format}`, format.toUpperCase(), children.length);
-    children.sort((a, b) => a.name.localeCompare(b.name)).forEach((asset) => node.append(assetRow(asset)));
+    children.sort(compareAssets).forEach((asset) => node.append(assetRow(asset)));
     container.append(node);
   }
 }
@@ -338,6 +368,7 @@ function renderList() {
   }
   list.scrollTop = scroll;
   el("list-empty").hidden = assets.size > 0 || folders.size > 0;
+  list.hidden = !el("list-empty").hidden;
   el("asset-count").textContent = String(assets.size);
   el("selected-count").textContent = t("{0} dipilih", selected.size);
   const all = el<HTMLInputElement>("select-all");
@@ -392,6 +423,14 @@ function renderKeywords() {
 function render(updateFields = false) {
   const asset = current();
   renderList();
+  el<HTMLSelectElement>("asset-sort").value = sortField;
+  const directionLabel = sortDirection === "asc"
+    ? t("Urutan naik; klik untuk menurun") : t("Urutan turun; klik untuk menaik");
+  el("asset-sort-direction").title = directionLabel;
+  el("asset-sort-direction").setAttribute("aria-label", directionLabel);
+  el("asset-sort-direction").querySelector("use")!.setAttribute("href", `#i-sort-${sortDirection}`);
+  el<HTMLSelectElement>("ai-result-mode").value = aiResultMode;
+  el<HTMLSelectElement>("ai-result-mode").disabled = !native || busy || aiBusy || !asset || !!asset.error;
   el<HTMLFieldSetElement>("editor-fields").disabled =
     busy || aiBusy || !asset || !!asset.error;
   for (const id of ["add-files", "add-folder", "empty-add", "choose-output"])
@@ -467,11 +506,13 @@ function render(updateFields = false) {
       : "";
   renderKeywords();
   const mode = preferences?.saveMode ?? "copy";
-  el("save-mode-summary").textContent = mode === "copy" ? t("Simpan salinan") : t("Ganti sumber + backup");
+  el("save-mode-summary").textContent = mode === "copy" ? t("Direktori output") : t("Ganti sumber + backup");
   el("save-destination-summary").textContent = mode === "copy"
     ? t("{0}/[tipe file]", preferences?.outputDir ?? t("Atur tujuan melalui Settings"))
     : t("Di direktori sumber");
-  el("save-destination-summary").title = preferences?.outputDir ?? "";
+  el("save-destination-summary").title = mode === "copy" ? preferences?.outputDir ?? "" : "";
+  el("open-output").hidden = mode !== "copy";
+  el<HTMLButtonElement>("open-output").disabled = !native || !preferences || openingOutput;
   el("save-hint").textContent =
     mode === "copy"
       ? t("Salinan baru menjaga file sumber tetap utuh.")
@@ -993,6 +1034,7 @@ async function generateTitleDescription() {
   if (!requireDesktop() || busy || aiBusy) return;
   const asset = current();
   if (!asset || asset.error) return;
+  const resultMode = aiResultMode;
   aiBusy = true;
   el("ai-status").textContent = t("Membuat title dan description untuk draft aset aktif…");
   el("ai-status").classList.remove("is-error");
@@ -1001,11 +1043,13 @@ async function generateTitleDescription() {
     const result = await invoke<GeneratedTitleDescription>("generate_title_description", {
       request: generationRequest(asset),
     });
-    asset.draft.title = result.title;
-    asset.draft.description = result.description;
+    const title = resultMode === "description" ? result.description : result.title;
+    const description = resultMode === "title" ? result.title : result.description;
+    asset.draft.title = title;
+    asset.draft.description = description;
     asset.saveError = null;
-    el<HTMLInputElement>("title").value = result.title;
-    el<HTMLTextAreaElement>("description").value = result.description;
+    el<HTMLInputElement>("title").value = title;
+    el<HTMLTextAreaElement>("description").value = description;
     el("ai-status").textContent = t("Title dan description masuk ke draft ({0} · {1}). Tinjau sebelum menyimpan.", result.providerName, result.modelName);
   } catch (error) {
     el("ai-status").textContent = t("Generate gagal: {0}", errorText(error));
@@ -1134,6 +1178,33 @@ function closeSettings() {
   el<HTMLButtonElement>("open-settings").focus();
 }
 
+el("asset-sort").addEventListener("change", () => {
+  sortField = el<HTMLSelectElement>("asset-sort").value as typeof sortField;
+  saveLocalChoice("sort-field", sortField);
+  render();
+});
+el("asset-sort-direction").addEventListener("click", () => {
+  sortDirection = sortDirection === "asc" ? "desc" : "asc";
+  saveLocalChoice("sort-direction", sortDirection);
+  render();
+});
+el("ai-result-mode").addEventListener("change", () => {
+  aiResultMode = el<HTMLSelectElement>("ai-result-mode").value as typeof aiResultMode;
+  saveLocalChoice("ai-result-mode", aiResultMode);
+});
+el("open-output").addEventListener("click", async () => {
+  if (!native || !preferences || preferences.saveMode !== "copy" || openingOutput) return;
+  openingOutput = true;
+  render();
+  try {
+    await invoke("open_output_directory");
+  } catch (error) {
+    message(errorText(error), true);
+  } finally {
+    openingOutput = false;
+    render();
+  }
+});
 el("add-files").addEventListener("click", () => void addFiles());
 el("empty-add").addEventListener("click", () => void addFiles());
 el("add-folder").addEventListener("click", () => void addFiles(true));

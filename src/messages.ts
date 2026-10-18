@@ -1,5 +1,20 @@
 // Every user-facing message must have both ID and EN. Keys are stable source messages.
 export const messages = {
+  "Urutkan": {"id": "Urutkan", "en": "Sort by"},
+  "Nama": {"id": "Nama", "en": "Name"},
+  "Tanggal dibuat": {"id": "Tanggal dibuat", "en": "Created date"},
+  "Tanggal diubah": {"id": "Tanggal diubah", "en": "Modified date"},
+  "Urutan naik; klik untuk menurun": {"id": "Urutan naik; klik untuk menurun", "en": "Ascending; click for descending"},
+  "Urutan turun; klik untuk menaik": {"id": "Urutan turun; klik untuk menaik", "en": "Descending; click for ascending"},
+  "Hasil judul & deskripsi": {"id": "Hasil judul & deskripsi", "en": "Title & description results"},
+  "Terpisah": {"id": "Terpisah", "en": "Separate"},
+  "Gunakan judul": {"id": "Gunakan judul", "en": "Use title"},
+  "Gunakan deskripsi": {"id": "Gunakan deskripsi", "en": "Use description"},
+  "Pilih judul atau deskripsi untuk mengisi kedua field setelah generate.": {"id": "Pilih judul atau deskripsi untuk mengisi kedua field setelah generate.", "en": "Choose title or description to fill both fields after generation."},
+  "Direktori output": {"id": "Direktori output", "en": "Output directory"},
+  "Buka direktori output": {"id": "Buka direktori output", "en": "Open output directory"},
+  "Direktori output tidak dapat dibuka: {0}": {"id": "Direktori output tidak dapat dibuka: {0}", "en": "Unable to open output directory: {0}"},
+
   "Buka aplikasi desktop untuk mengakses dan menyimpan file lokal.": {"id": "Buka aplikasi desktop untuk mengakses dan menyimpan file lokal.", "en": "Open the desktop app to access and save local files."},
   "Pilih {0}": {"id": "Pilih {0}", "en": "Select {0}"},
   "Gagal · lihat detail": {"id": "Gagal · lihat detail", "en": "Failed · see details"},
