@@ -35,6 +35,9 @@ let active: string | null = null;
 let busy = false;
 let aiBusy = false;
 let settingsBusy = false;
+let previewCacheBusy = false;
+let previewCacheBytes: number | null = null;
+let previewCacheStatus: { key: string; params: unknown[]; state: "error" | "success" | "neutral" } | null = null;
 let preferences: AppPreferences | null = null;
 let outputDir: string | null = null;
 const folders = new Map<string, FolderStatus>();
@@ -150,9 +153,11 @@ const targets = () =>
     .map((path) => assets.get(path)!)
     .filter((asset) => asset && !asset.error && dirty(asset));
 const sizeText = (size: number) =>
-  size < 1024 * 1024
-    ? `${(size / 1024).toFixed(0)} KB`
-    : `${(size / 1024 / 1024).toFixed(1)} MB`;
+  size < 1024
+    ? `${size} B`
+    : size < 1024 * 1024
+      ? `${(size / 1024).toFixed(0)} KB`
+      : `${(size / 1024 / 1024).toFixed(1)} MB`;
 const keywords = (value: string) => {
   const seen = new Set<string>();
   return value
@@ -394,6 +399,7 @@ function render(updateFields = false) {
   el<HTMLButtonElement>("reload").disabled = busy || aiBusy || selected.size === 0;
   el<HTMLSelectElement>("save-mode").disabled = !native || busy || aiBusy || settingsBusy;
   el<HTMLButtonElement>("save-settings").disabled = !native || busy || aiBusy || settingsBusy || !preferences;
+  el<HTMLButtonElement>("clear-preview-cache").disabled = !native || previewCacheBusy;
   el<HTMLButtonElement>("choose-output").disabled = !native || busy || aiBusy || settingsBusy;
   el<HTMLTextAreaElement>("additional-context").disabled = busy || aiBusy || !asset || !!asset.error;
   el<HTMLButtonElement>("open-settings").disabled = !native || busy || aiBusy || settingsBusy;
@@ -512,18 +518,11 @@ async function loadPreview() {
     ? t("Metadata dan preview diproses secara terpisah.")
     : t("Tambahkan aset untuk menyunting title, description,\ndan keywords tanpa mengubah konten media.");
   if (!asset) return;
-  const video = ["mp4", "mov"].includes(asset.format);
-  el("empty-icon").setAttribute("href", video ? "#i-video" : "#i-image");
-  if (video || asset.error) {
-    el("empty-title").textContent = video
-      ? t("Metadata untuk setiap frame.")
-      : t("Preview tidak tersedia");
-    el("empty-description").textContent = video
-      ? t("Preview video belum tersedia.\nTitle, description, dan keywords tetap dapat disunting.")
-      : (asset.error ? errorText(asset.error) : "");
-    el("preview-state").textContent = video
-      ? t("Informasi video")
-      : t("File tidak dapat dibaca");
+  el("empty-icon").setAttribute("href", "#i-image");
+  if (asset.error) {
+    el("empty-title").textContent = t("Preview tidak tersedia");
+    el("empty-description").textContent = errorText(asset.error);
+    el("preview-state").textContent = t("File tidak dapat dibaca");
     return;
   }
   try {
@@ -533,7 +532,7 @@ async function loadPreview() {
     if (generation !== previewGeneration) return;
     previewUrl = URL.createObjectURL(
       new Blob([bytes], {
-        type: asset.format === "svg" ? "image/svg+xml" : "image/png",
+        type: "image/png",
       }),
     );
     image.onload = () => {
@@ -1047,6 +1046,11 @@ async function openSettings() {
   settingsOpen = true;
   el("app").classList.add("settings-open");
   el("settings-view").hidden = false;
+  previewCacheBytes = null;
+  previewCacheStatus = null;
+  renderPreviewCacheSize();
+  renderPreviewCacheStatus();
+  void refreshPreviewCacheSize();
   setSettingsStatus(t("Memuat pengaturan lokal…"));
   setSettingsBusy(true);
   try {
@@ -1066,6 +1070,58 @@ async function openSettings() {
   }
 }
 
+function renderPreviewCacheSize() {
+  el("preview-cache-size").textContent = previewCacheBytes === null
+    ? t("Memuat ukuran cache…")
+    : sizeText(previewCacheBytes);
+}
+
+function renderPreviewCacheStatus() {
+  const node = el("preview-cache-status");
+  node.textContent = previewCacheStatus
+    ? t(previewCacheStatus.key as Parameters<typeof t>[0], ...previewCacheStatus.params)
+    : "";
+  node.classList.toggle("is-error", previewCacheStatus?.state === "error");
+  node.classList.toggle("is-success", previewCacheStatus?.state === "success");
+}
+
+function setPreviewCacheStatus(
+  key: string,
+  state: "error" | "success" | "neutral" = "neutral",
+  ...params: unknown[]
+) {
+  previewCacheStatus = { key, params, state };
+  renderPreviewCacheStatus();
+}
+
+async function refreshPreviewCacheSize() {
+  try {
+    previewCacheBytes = await invoke<number>("get_preview_cache_size");
+    renderPreviewCacheSize();
+  } catch (error) {
+    setPreviewCacheStatus("Ukuran cache preview tidak dapat dimuat: {0}", "error", errorText(error));
+  }
+}
+
+async function clearPreviewCache() {
+  if (!requireDesktop() || previewCacheBusy) return;
+  previewCacheBusy = true;
+  const button = el<HTMLButtonElement>("clear-preview-cache");
+  button.disabled = true;
+  setPreviewCacheStatus("Menghapus cache preview…");
+  try {
+    const clearedBytes = await invoke<number>("clear_preview_cache");
+    previewCacheBytes = 0;
+    renderPreviewCacheSize();
+    setPreviewCacheStatus("Cache preview dihapus ({0}).", "success", sizeText(clearedBytes));
+  } catch (error) {
+    setPreviewCacheStatus("Cache preview tidak dapat dihapus: {0}", "error", errorText(error));
+  } finally {
+    previewCacheBusy = false;
+    button.disabled = !native;
+  }
+}
+
 function closeSettings() {
   if (settingsBusy) return;
   settingsOpen = false;
@@ -1082,6 +1138,7 @@ el("add-files").addEventListener("click", () => void addFiles());
 el("empty-add").addEventListener("click", () => void addFiles());
 el("add-folder").addEventListener("click", () => void addFiles(true));
 el("open-settings").addEventListener("click", () => void openSettings());
+el<HTMLButtonElement>("clear-preview-cache").addEventListener("click", () => void clearPreviewCache());
 el("settings-back").addEventListener("click", closeSettings);
 el<HTMLSelectElement>("provider-select").addEventListener("change", () => {
   selectedProvider = el<HTMLSelectElement>("provider-select").value;
@@ -1199,6 +1256,8 @@ document.addEventListener("keydown", (event) => {
 
 function applyAppearance(language: Language, theme: Theme) {
   applyTranslations(language, theme);
+  renderPreviewCacheSize();
+  renderPreviewCacheStatus();
   el("message").hidden = true;
   render();
   renderProviderSettings();

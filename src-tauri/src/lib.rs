@@ -13,7 +13,6 @@ mod desktop {
     use super::{
         ai::{self, AiGenerationRequest, AiSettingsInput, ProviderDraft},
         files::{self, FileStamp, SaveRequest, SaveResult},
-        metadata,
         preferences::{self, Preferences},
         preview,
     };
@@ -92,6 +91,14 @@ mod desktop {
             .join("app-preferences.json"))
     }
 
+    fn preview_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+        Ok(app
+            .path()
+            .app_cache_dir()
+            .map_err(|e| e.to_string())?
+            .join("previews"))
+    }
+
     #[tauri::command]
     fn load_app_preferences(
         app: tauri::AppHandle,
@@ -135,6 +142,7 @@ mod desktop {
     #[tauri::command]
     async fn read_preview(
         path: String,
+        app: tauri::AppHandle,
         state: State<'_, AppState>,
     ) -> Result<tauri::ipc::Response, super::messages::AppError> {
         if !state
@@ -146,9 +154,42 @@ mod desktop {
             return Err("Impor file terlebih dahulu.".into());
         }
         let queue = state.previews.clone();
+        let cache_dir = preview_cache_dir(&app)?;
         tauri::async_runtime::spawn_blocking(move || {
             let _guard = queue.lock().map_err(|e| e.to_string())?;
-            preview::read(Path::new(&path)).map(tauri::ipc::Response::new)
+            preview::read_cached(Path::new(&path), &cache_dir).map(tauri::ipc::Response::new)
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(Into::into)
+    }
+
+    #[tauri::command]
+    async fn get_preview_cache_size(
+        app: tauri::AppHandle,
+        state: State<'_, AppState>,
+    ) -> Result<u64, super::messages::AppError> {
+        let queue = state.previews.clone();
+        let cache_dir = preview_cache_dir(&app)?;
+        tauri::async_runtime::spawn_blocking(move || {
+            let _guard = queue.lock().map_err(|e| e.to_string())?;
+            preview::cache_size(&cache_dir)
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(Into::into)
+    }
+
+    #[tauri::command]
+    async fn clear_preview_cache(
+        app: tauri::AppHandle,
+        state: State<'_, AppState>,
+    ) -> Result<u64, super::messages::AppError> {
+        let queue = state.previews.clone();
+        let cache_dir = preview_cache_dir(&app)?;
+        tauri::async_runtime::spawn_blocking(move || {
+            let _guard = queue.lock().map_err(|e| e.to_string())?;
+            preview::clear_cache(&cache_dir)
         })
         .await
         .map_err(|e| e.to_string())?
@@ -282,7 +323,7 @@ mod desktop {
         request: AiGenerationRequest,
         state: State<'_, AppState>,
     ) -> Result<ai::GeneratedTitleDescription, super::messages::AppError> {
-        let preview = ai_preview(&request.path, &state).await?;
+        let preview = ai_preview(&request.path, &app, &state).await?;
         ai::generate_title_description(&app, request, preview)
             .await
             .map_err(Into::into)
@@ -294,13 +335,17 @@ mod desktop {
         request: AiGenerationRequest,
         state: State<'_, AppState>,
     ) -> Result<ai::GeneratedKeywords, super::messages::AppError> {
-        let preview = ai_preview(&request.path, &state).await?;
+        let preview = ai_preview(&request.path, &app, &state).await?;
         ai::generate_keywords(&app, request, preview)
             .await
             .map_err(Into::into)
     }
 
-    async fn ai_preview(path: &str, state: &AppState) -> Result<Option<Vec<u8>>, String> {
+    async fn ai_preview(
+        path: &str,
+        app: &tauri::AppHandle,
+        state: &AppState,
+    ) -> Result<Option<Vec<u8>>, String> {
         if !state
             .snapshots
             .lock()
@@ -309,15 +354,12 @@ mod desktop {
         {
             return Err("Impor aset terlebih dahulu.".into());
         }
-        let kind = metadata::format(Path::new(path))?;
-        if !matches!(kind.as_str(), "jpg" | "jpeg" | "png" | "eps") {
-            return Ok(None);
-        }
         let path = PathBuf::from(path);
         let queue = state.previews.clone();
+        let cache_dir = preview_cache_dir(app)?;
         tauri::async_runtime::spawn_blocking(move || {
             let _guard = queue.lock().map_err(|e| e.to_string())?;
-            Ok(preview::read(&path).ok())
+            Ok(preview::read_cached(&path, &cache_dir).ok())
         })
         .await
         .map_err(|e| e.to_string())?
@@ -333,6 +375,8 @@ mod desktop {
                 save_app_preferences,
                 remove_asset_folder,
                 read_preview,
+                get_preview_cache_size,
+                clear_preview_cache,
                 save_metadata,
                 load_ai_settings,
                 save_ai_settings,

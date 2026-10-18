@@ -44,6 +44,15 @@ Browser plugin tidak menyediakan browser aktif pada lingkungan ini; pemeriksaan 
 - Screenshot native mencakup editor dan Settings pada 1440×900 serta 1024×700 untuk ID/light dan EN/dark. Satu batch perbaikan menempatkan tombol simpan pada footer Settings yang tetap terlihat, merapikan jarak label, dan menyusun pilihan bahasa/tema berdampingan; konfirmasi visual selesai.
 - IPC error mengirim key/parameter terstruktur. Impor, simpan salinan, dan readback JPG, PNG, SVG, EPS, MP4, dan MOV melalui backend release berhasil; byte semua sumber tetap identik. Uji ini tidak memakai provider eksternal atau menulis credential nyata.
 
+## Verifikasi preview/cache
+
+- `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features` lulus 16 tes (6 unit, 10 integrasi). Tes preview merender fixture SVG, EPS tanpa TIFF tertanam, MP4, dan MOV menjadi PNG; tes cache memeriksa reuse, invalidasi setelah sumber berubah, ukuran total, dan penghapusan.
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib` lulus 14 tes. Tes AI memeriksa gambar dikirim hanya pada model vision dan tetap mematuhi batas ukuran preview.
+- Binary release Tauri diuji melalui `tauri-driver` + WebKitWebDriver dengan XDG config/data/cache terisolasi. IPC mengimpor fixture SVG/EPS/MP4/MOV dan menghasilkan empat preview (total cache 1,116 byte). Tombol Clear Preview Cache menghapusnya hingga ukuran 0 B dan tidak menyimpan perubahan bahasa yang belum disimpan.
+- Settings diperiksa pada 1440×900 dan 1024×700 dalam kombinasi ID/light, ID/dark, EN/light, dan EN/dark. Tombol cache tetap terlihat, tidak ada overflow horizontal pada ukuran compact, dan footer Save settings tidak menutupi section cache. Screenshot pemeriksaan disimpan di `/tmp/preview-settings-*.png`.
+- `npm run build` lulus. `npm run bundle` menghasilkan RPM x86_64; `rpm -qp --requires` mengonfirmasi `ghostscript` dan `ffmpeg-free` tercantum sebagai dependensi.
+- Tidak ada permintaan ke provider AI eksternal dalam verifikasi ini. Browser plugin dan Playwright tidak tersedia di lingkungan; pemeriksaan UI memakai WebKitWebDriver pada binary Tauri asli.
+
 ## Distribusi
 
 `npm run bundle` menghasilkan executable dan paket RPM x86_64 pada `src-tauri/target/release/`. Pemeriksaan library executable tidak menemukan dependency yang hilang atau dependency ke sysroot sementara.
@@ -62,6 +71,6 @@ Path sementara tersebut hanya diperlukan untuk build pada sesi ini. Untuk lingku
 
 ## Batas bukti
 
-Preview TIFF palet dengan alpha pada beberapa EPS Illustrator belum dapat didekode, tetapi byte preview tetap dipertahankan saat metadata ditulis. Video menampilkan informasi file; aplikasi tidak menyediakan pemutar video. SVG dibatasi UTF-8.
+Preview TIFF palet dengan alpha pada beberapa EPS Illustrator dialihkan ke Ghostscript; EPS tetap bisa tidak memiliki preview bila renderer gagal. Frame video memerlukan codec yang tersedia pada FFmpeg dan aplikasinya tidak menyediakan pemutar video. SVG dibatasi UTF-8.
 
 Belum dilakukan pengujian unggah ke portal microstock, buka/simpan ulang di Illustrator, distribusi selain Fedora 44, atau sistem operasi lain. Pemeriksaan lokal XMP tidak menjamin tiap portal membaca field yang sama.

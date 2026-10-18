@@ -994,6 +994,7 @@ progress::-webkit-progress-value {
   margin: 0 auto;
   border: 1px solid var(--border);
   background: var(--panel);
+  margin-bottom: 56px;
 }
 .settings-heading {
   display: flex;
@@ -1351,12 +1352,35 @@ progress::-webkit-progress-value {
 .appearance-settings h2 { grid-column: 1 / -1; font-size: 13px; }
 .appearance-settings .settings-field > span:first-child { font-size: 10px; font-weight: 600; color: var(--muted); }
 .settings-panel > .settings-actions { position: sticky; bottom: -38px; background: var(--panel); padding: 14px 20px; margin: 0; z-index: 2; }
+.preview-cache-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 18px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+.preview-cache-settings h2,
+.preview-cache-settings > .settings-help,
+.preview-cache-status { grid-column: 1 / -1; }
+.preview-cache-settings h2 { font-size: 13px; }
+.preview-cache-size { color: var(--muted); font-size: 11px; }
+.preview-cache-size strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.preview-cache-status { margin: 0; }
 :root[data-theme="dark"] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0c1d2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
 :root[data-theme="dark"] .asset-group > summary::before { filter: brightness(2.4); }
 @media (max-width: 900px) {
   .panel-resizer { display: none; }
   .appearance-settings { padding: 14px; }
   .settings-panel > .settings-actions { bottom: -12px; padding-inline: 14px; }
+  .settings-panel { margin-bottom: 28px; }
+  .preview-cache-settings { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .preview-cache-settings h2,
+  .preview-cache-settings > .settings-help,
+  .preview-cache-status { grid-column: auto; }
   .appearance-settings { grid-template-columns: 1fr; }
 }
 

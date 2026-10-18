@@ -8,7 +8,7 @@ Root project adalah direktori ini; tidak ada direktori project pembungkus baru.
 - Tauri 2 + Rust + Vite + vanilla TypeScript + CSS.
 - Title, description, dan ordered keywords untuk JPG/JPEG, PNG, SVG, EPS, MP4, MOV.
 - Salinan sebagai default, dengan pilihan pembaruan sumber dan backup berversi.
-- Preview ringan; video menampilkan informasi file.
+- Preview PNG lokal untuk aset aktif, dipakai kembali oleh editor dan AI; EPS memakai TIFF tertanam atau Ghostscript dan video memakai satu poster frame FFmpeg.
 - Pembuatan UI langsung dari kode mengikuti referensi persegi dengan warna lembut.
 
 ## Struktur dan kontrak
@@ -19,6 +19,8 @@ Frontend terdiri dari `main.ts`, `types.ts`, dan `styles.css`. Backend dipisahka
 | --- | --- |
 | `inspect_assets(paths, refresh=false)` | `{ assets, folders, files }`: aset unik, root folder/status pemindaian, dan path file impor langsung; pemindaian rekursif tanpa symbolic link. Snapshot diperbarui hanya ketika muat ulang diminta. |
 | `read_preview(path)` | Byte gambar untuk file yang sudah diimpor. |
+| `get_preview_cache_size()` | Total byte file cache preview. |
+| `clear_preview_cache()` | Hapus cache preview dan kembalikan jumlah byte yang dihapus. |
 | `save_metadata({ items })` | Patch per file; mode dan root keluaran dibaca dari preferensi sekali per batch; hasil per file. |
 | `load_app_preferences()` | Mode simpan, root keluaran, daftar folder, bahasa, dan tema tersimpan. |
 | `save_app_preferences(saveMode, outputDir, language, theme)` | Simpan mode/tujuan/bahasa/tema tanpa mengubah daftar folder. |
@@ -40,6 +42,8 @@ Patch yang tidak menyertakan field mempertahankan field tersebut. String kosong 
 
 6. **Selesai — panel dan tampilan:** resize panel dengan pointer/keyboard dan persistensi, satu tombol simpan pengaturan, bahasa ID/EN untuk copy aplikasi dan error IPC terstruktur, tema light/dark, serta migrasi preferensi lama.
 
+7. **Selesai — preview dan cache:** cache PNG yang memakai versi file dan renderer, rasterisasi SVG, fallback Ghostscript untuk EPS, poster frame FFmpeg untuk MP4/MOV, preview vision AI dari cache yang sama, serta ukuran dan tombol hapus cache terpisah di bagian bawah Settings.
+
 Bukti pemeriksaan serta batas pengujian dicatat di [docs/VALIDATION.md](docs/VALIDATION.md). Artefak rilis tersedia di `src-tauri/target/release/`.
 
 ## Penyimpanan
@@ -48,6 +52,6 @@ Salin ke file sementara → ubah metadata → tutup penulis dengan pelaporan err
 
 ## Batas verifikasi
 
-Sampel Illustrator diuji hanya pada salinan sementara; preview TIFF mentah harus identik. Decoder preview tidak mendukung seluruh variasi TIFF, dan kegagalannya tidak memblokir metadata. Kompatibilitas setelah dibuka dan disimpan ulang di Illustrator serta pembacaan metadata oleh portal agency memerlukan pemeriksaan eksternal.
+Sampel Illustrator diuji hanya pada salinan sementara; preview TIFF mentah harus identik. Jika preview EPS tertanam tidak dapat didekode, Ghostscript menjadi fallback; format EPS atau codec video yang tidak didukung renderer tetap dapat disunting metadatanya tanpa preview. Kompatibilitas setelah dibuka dan disimpan ulang di Illustrator serta pembacaan metadata oleh portal agency memerlukan pemeriksaan eksternal.
 
-Ekspor CSV dan pemutar video berada di luar versi pertama. Tidak ada layanan cloud, database, atau framework UI tambahan.
+Ekspor CSV dan pemutaran video berada di luar versi pertama; preview video hanya satu frame statis. Tidak ada layanan cloud, database, atau framework UI tambahan.

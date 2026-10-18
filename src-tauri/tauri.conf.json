@@ -15,5 +15,11 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'; base-uri 'self'"
     }
   },
-  "bundle": { "active": true, "targets": ["rpm"], "category": "GraphicsAndDesign", "icon": ["icons/icon.png"] }
+  "bundle": {
+    "active": true,
+    "targets": ["rpm"],
+    "category": "GraphicsAndDesign",
+    "icon": ["icons/icon.png"],
+    "linux": { "rpm": { "depends": ["ghostscript", "ffmpeg-free"] } }
+  }
 }

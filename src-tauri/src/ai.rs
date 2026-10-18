@@ -1224,4 +1224,23 @@ mod tests {
         assert!(supports_vision(&gpt, None));
         assert!(supports_vision(&deepseek, None));
     }
+
+    #[test]
+    fn previews_are_sent_only_to_vision_models_within_the_size_limit() {
+        let provider = |vision_override| ProviderSetting {
+            provider_name: "GPT".into(),
+            endpoint_url: String::new(),
+            model_name: "gpt-6.1-sol".into(),
+            vision_override,
+            is_active: true,
+        };
+        assert_eq!(
+            image_for_model(&provider(None), Some(vec![1])),
+            Some(vec![1])
+        );
+        assert!(image_for_model(&provider(Some(false)), Some(vec![1])).is_none());
+        assert!(
+            image_for_model(&provider(Some(true)), Some(vec![0; MAX_IMAGE_BYTES + 1])).is_none()
+        );
+    }
 }
