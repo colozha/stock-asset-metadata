@@ -4,7 +4,22 @@ use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
+    sync::Mutex,
 };
+
+static WRITES: Mutex<()> = Mutex::new(());
+
+pub fn update(
+    path: &Path,
+    documents: &Path,
+    change: impl FnOnce(&mut Preferences),
+) -> AppResult<Preferences> {
+    let _guard = WRITES.lock().map_err(|error| error.to_string())?;
+    let mut value = load(path, documents)?;
+    change(&mut value);
+    save(path, &value)?;
+    Ok(value)
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,17 +51,19 @@ pub enum Theme {
 }
 
 pub fn load(path: &Path, documents: &Path) -> AppResult<Preferences> {
-    if !path.exists() {
-        return Ok(Preferences {
-            language: Language::Id,
-            theme: Theme::Light,
-            save_mode: SaveMode::Copy,
-            output_dir: documents.join("stock-assets"),
-            folders: Vec::new(),
-        });
-    }
-    let bytes = fs::read(path)
-        .map_err(|error| format!("Pengaturan aplikasi tidak dapat dibaca: {error}"))?;
+    let bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(Preferences {
+                language: Language::Id,
+                theme: Theme::Light,
+                save_mode: SaveMode::Copy,
+                output_dir: documents.join("stock-assets"),
+                folders: Vec::new(),
+            });
+        }
+        Err(error) => return Err(format!("Pengaturan aplikasi tidak dapat dibaca: {error}")),
+    };
     serde_json::from_slice(&bytes)
         .map_err(|error| format!("Pengaturan aplikasi tidak valid: {error}"))
 }
@@ -74,6 +91,61 @@ pub fn save(path: &Path, value: &Preferences) -> AppResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn concurrent_folder_updates_preserve_saved_settings() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("preferences.json");
+        let barrier = std::sync::Barrier::new(8);
+        std::thread::scope(|scope| {
+            for index in 0..8 {
+                let path = &path;
+                let documents = directory.path();
+                let barrier = &barrier;
+                scope.spawn(move || {
+                    barrier.wait();
+                    update(path, documents, |value| {
+                        if index == 0 {
+                            value.language = Language::En;
+                            value.theme = Theme::Dark;
+                            value.save_mode = SaveMode::ReplaceWithBackup;
+                            value.output_dir = documents.join("custom-output");
+                        } else {
+                            value.folders.push(format!("/assets/{index}"));
+                        }
+                    })
+                    .unwrap();
+                });
+            }
+        });
+        let restored = load(&path, directory.path()).unwrap();
+        assert_eq!(restored.folders.len(), 7);
+        assert_eq!(restored.language, Language::En);
+        assert_eq!(restored.theme, Theme::Dark);
+        assert!(matches!(restored.save_mode, SaveMode::ReplaceWithBackup));
+        assert_eq!(restored.output_dir, directory.path().join("custom-output"));
+        update(&path, directory.path(), |value| value.folders.clear()).unwrap();
+        let restored = load(&path, directory.path()).unwrap();
+        assert!(restored.folders.is_empty());
+        assert_eq!(restored.language, Language::En);
+        assert_eq!(restored.theme, Theme::Dark);
+        assert_eq!(restored.output_dir, directory.path().join("custom-output"));
+    }
+
+    #[test]
+    fn failed_update_preserves_existing_configuration() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("preferences.json");
+        update(&path, directory.path(), |value| value.theme = Theme::Dark).unwrap();
+        let saved = fs::read(&path).unwrap();
+        assert!(update(&path, directory.path(), |value| value.output_dir = "relative".into()).is_err());
+        assert_eq!(fs::read(&path).unwrap(), saved);
+        fs::write(&path, b"invalid").unwrap();
+        assert!(update(&path, directory.path(), |value| value.folders.clear()).is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"invalid");
+        // An inaccessible path must not be treated as a missing configuration.
+        assert!(load(&path.join("preferences.json"), directory.path()).is_err());
+    }
 
     #[test]
     fn preferences_default_roundtrip_and_invalid_data() {

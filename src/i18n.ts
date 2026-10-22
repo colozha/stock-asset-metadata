@@ -15,12 +15,15 @@ export function errorText(error: unknown): string {
   return String(error);
 }
 export function applyTranslations(next: Language, theme: Theme) {
+  // WebKit can reset selection when translated option text is replaced.
+  const selections = [...document.querySelectorAll("select")].map((select) => [select, select.value] as const);
   language = next;
   document.documentElement.lang = next;
   document.documentElement.dataset.theme = theme;
   for (const node of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
     node.textContent = t(node.dataset.i18n as MessageKey);
   }
+  for (const [select, value] of selections) select.value = value;
   for (const attribute of ["title", "aria-label", "placeholder"]) {
     for (const node of document.querySelectorAll<HTMLElement>(`[data-i18n-${attribute}]`)) {
       node.setAttribute(attribute, t(node.getAttribute(`data-i18n-${attribute}`) as MessageKey));

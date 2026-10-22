@@ -27,7 +27,13 @@ Di **Pengaturan → Tampilan**, pilih **ID — Indonesia** atau **EN — English
 
 Bagian **Cache preview / Preview cache** di bagian bawah Settings menampilkan ukuran cache preview dan menyediakan tombol hapus terpisah dari penyimpanan pengaturan. Preview disimpan lokal setelah aset aktif dibuka, digunakan kembali saat dipilih atau dikirim ke AI, dan dibuat ulang setelah file sumber berubah.
 
-Gunakan **Keluarkan folder dari daftar** (ikon silang pada root folder) untuk melepas lokasi tersimpan tanpa menghapus file di disk. Folder yang hilang tetap ditampilkan dengan pesan kesalahan. Draft yang akan dilepas memerlukan konfirmasi; aset yang masih tercakup folder lain atau diimpor langsung tetap tersedia. Pemindaian berjalan saat startup/impor, tanpa pemantauan filesystem otomatis.
+Sidebar memiliki accordion **Aset Anda / Your assets** dan **Keluaran / Output**; hanya satu yang terbuka. Keluaran membaca aset dari folder output tersimpan untuk preview dan pemeriksaan metadata, tanpa penyuntingan, AI, batch, atau penyimpanan. Folder yang belum tersedia dilaporkan tanpa dibuat otomatis; CSV dan backup tidak masuk daftar. Daftar keluaran diperbarui saat startup, refresh, perubahan tujuan tersimpan, dan setelah penyimpanan aset.
+
+Klik ikon search di header **Aset Anda / Your assets** atau **Keluaran / Output** untuk membuka dan memfokuskan kolom **Cari nama file / Search filenames**. Input tersembunyi saat startup; klik ikon lagi untuk menutupnya sekaligus menghapus filter. Pencarian mencocokkan sebagian nama atau ekstensi tanpa membedakan huruf besar/kecil. Keadaan pencarian terpisah per section dan dipertahankan saat berpindah accordion selama sesi. Tombol hapus di samping input mengosongkan query tanpa menutup pencarian. **Pilih semua** hanya mengubah pilihan pada hasil yang terlihat; jumlah pilihan tersembunyi tetap ditampilkan.
+
+Tombol **Pindai ulang aset dan keluaran / Rescan assets and output** memindai ulang seluruh folder dan file impor langsung, meskipun tidak ada checkbox aktif. File baru muncul, entri bersih yang hilang dari folder yang berhasil dipindai dilepas, dan aset bersih dibaca ulang. Draft metadata, konteks AI, dan urutan keyword dipertahankan. Jika sumber berubah di disk, penyimpanan draft tetap ditolak; periksa perubahan lalu gunakan **Buang draft dan muat ulang / Discard draft and reload** pada detail error untuk membaca versi disk dengan konfirmasi.
+
+Gunakan **Keluarkan folder dari daftar** (ikon silang pada root folder) untuk melepas lokasi tersimpan tanpa menghapus file di disk. Folder yang hilang tetap ditampilkan dengan pesan kesalahan. Draft yang akan dilepas memerlukan konfirmasi; aset yang masih tercakup folder lain atau diimpor langsung tetap tersedia. Pemindaian berjalan saat startup/impor/refresh, tanpa pemantauan filesystem otomatis.
 
 Gunakan **Generate Title + Description** atau **Generate Keywords** untuk mengisi draft aset aktif. Isi **Konteks tambahan (opsional)** untuk memberi referensi subjek atau penggunaan bagi kedua aksi. Konteks terpisah per aset, bertahan saat berpindah aset selama sesi, dan tidak ditanamkan sebagai metadata atau disimpan setelah aplikasi ditutup. Pilih panjang description (Short, Medium, Long) dan jumlah keywords 10–50. Hasil AI tidak langsung ditanamkan; tinjau draft lalu simpan seperti perubahan metadata lain.
 
@@ -37,7 +43,7 @@ Pengaturan provider tersedia lewat tombol **Settings**. Daftar model dapat dimua
 
 Simpan salinan tidak memperbarui file sumber. Mengganti mode ke pembaruan sumber memperlihatkan kembali perubahan yang belum diterapkan pada sumber tersebut.
 
-Sorting sidebar tersedia melalui **Urutkan** berdasarkan nama, tanggal dibuat, atau tanggal diubah, dengan arah naik/turun. Urutan hanya berlaku di dalam setiap grup format. Tanggal mengikuti filesystem saat impor/muat ulang; tanggal yang tidak tersedia selalu diletakkan terakhir. Kolom dan arah urutan tersimpan lokal.
+Sorting kedua section sidebar tersedia melalui **Urutkan** berdasarkan nama, tanggal dibuat, atau tanggal diubah, dengan arah naik/turun. Tree mengelompokkan folder lalu format; urutan hanya berlaku di dalam setiap grup format. Tanggal mengikuti filesystem saat impor/muat ulang; tanggal yang tidak tersedia selalu diletakkan terakhir. Kolom dan arah urutan tersimpan lokal secara terpisah untuk Aset Anda dan Keluaran.
 
 Pada panel AI, **Hasil judul & deskripsi** menyediakan **Terpisah**, **Gunakan judul**, atau **Gunakan deskripsi**. Dua pilihan terakhir memakai hasil terpilih untuk kedua field setelah generate berhasil. Pilihan tersimpan lokal; perubahan pilihan tidak menyalin draft saat ini dan edit manual tetap bebas.
 
@@ -45,7 +51,7 @@ Footer mode salinan menampilkan **Direktori output** beserta tombol ikon folder 
 
 ## Perlindungan file
 
-Setiap penulisan dilakukan pada file sementara di filesystem tujuan. Metadata dibaca kembali dan dibandingkan sebelum hasil difinalisasi. Mode pembaruan membuat backup `file.ext.bak`, lalu `.bak.1`, dan seterusnya. File keluaran yang bertabrakan mendapat suffix `_1`, `_2`, dan seterusnya. Sumber yang berubah sejak diimpor ditolak; gunakan tombol muat ulang setelah memeriksa draft.
+Setiap penulisan dilakukan pada file sementara di filesystem tujuan. Metadata dibaca kembali dan dibandingkan sebelum hasil difinalisasi. Mode pembaruan membuat backup `file.ext.bak`, lalu `.bak.1`, dan seterusnya. File keluaran yang bertabrakan mendapat suffix `_1`, `_2`, dan seterusnya. Sumber yang berubah sejak diimpor ditolak; gunakan aksi buang draft dan muat ulang pada detail error setelah memeriksa draft.
 
 Data gambar dan stream video tidak melewati encoder ketika metadata disimpan. Preview PNG dibuat terpisah untuk aset aktif dan disimpan di cache aplikasi. Aplikasi tidak mengunggah aset secara otomatis dan tidak memakai server aplikasi atau database. Jika pengguna menekan tombol generate atau Test Connection, aplikasi mengirim permintaan ke provider terpilih; generate menyertakan nama aset, metadata, dan konteks tambahan jika diisi. Untuk model yang mendukung vision dan memenuhi batas ukuran yang ada, generate juga dapat mengirim preview PNG JPG, PNG, SVG, EPS, MP4, atau MOV. Permintaan dapat menggunakan kuota atau biaya provider, dan mengikuti kebijakan data provider tersebut. Keberhasilan satu file tidak menyembunyikan kegagalan file lain.
 

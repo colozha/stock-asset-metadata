@@ -1,5 +1,54 @@
 # Hasil validasi
 
+## Pencarian dari header sidebar — 22 Oktober 2026
+
+- `npm run build` lulus. Perubahan hanya mencakup frontend dan dokumentasi;
+  tes backend tidak diulang. Build dan instalasi berikutnya dicatat di Distribusi.
+- Binary debug Tauri melalui WebKitWebDriver dengan frontend Vite lokal dan
+  konfigurasi XDG/fixture sementara memeriksa input tersembunyi saat awal,
+  buka/fokus lewat ikon pada kedua header, pembukaan section yang tertutup,
+  filter nama, tutup/reset, clear tanpa menutup, serta state terpisah saat
+  berpindah accordion. Enter pada tombol search berhasil membuka/menutup dan
+  memindahkan fokus dengan benar. Tidak ada nested button.
+- ID/EN × light/dark pada 1440×900 dan 1024×700 menghasilkan 16 capture di
+  `/tmp/stock-search-qa/`. Tidak ada overflow horizontal atau runtime error;
+  draft dan urutan keyword tetap utuh, termasuk setelah pergantian bahasa/tema.
+  Reload mengembalikan pencarian kedua section ke keadaan tersembunyi.
+
+## Verifikasi 22 Oktober 2026: settings, refresh workspace, dan Output
+
+- `npm run build` dan build debug Rust lulus. Backend tanpa fitur desktop lulus
+  **22 tes** (12 unit, 10 integrasi); tes lengkap dengan fitur desktop lulus
+  **30 tes** (20 unit, 10 integrasi). Regresi baru mencakup pembaruan preferensi
+  bersamaan, pemeliharaan field settings saat folder berubah, serta konfigurasi
+  yang tetap utuh ketika validasi/penulisan gagal atau file konfigurasi rusak.
+- Binary debug **Tauri asli** diperiksa melalui `tauri-driver`/WebKitWebDriver,
+  memakai frontend Vite di `http://127.0.0.1:1420`, direktori XDG terisolasi,
+  dan fixture SVG sementara. Pemindaian, settings, preview, dan simpan memakai
+  IPC Rust asli. Impor 600 file berjalan bersamaan dengan simpan settings:
+  settings selesai sebelum impor, dan hasil akhir mempertahankan settings
+  terbaru sekaligus root folder baru. Pengeluaran root juga mempertahankan
+  settings tersebut.
+- Restart memulihkan EN/dark, mode ganti sumber, tujuan output khusus, dan root
+  aset. Isi serta waktu modifikasi konfigurasi identik sebelum/sesudah startup;
+  startup tidak menulis ulang settings. Dropdown tema dan mode nondefault tetap
+  terpilih setelah penerjemahan label serta pembukaan dan penyimpanan Settings.
+- Refresh menemukan file baru, melepas entri bersih yang dihapus dari folder,
+  mempertahankan draft/konteks/urutan keyword, dan menjaga draft sumber yang
+  hilang dengan pesan error. Perubahan eksternal tetap ditolak saat simpan,
+  termasuk ketika path sumber juga tampil di Output. Isi perubahan eksternal
+  tetap utuh.
+- Output menampilkan hasil save tanpa refresh manual, memperbarui folder tujuan
+  saat dipindai, dan melaporkan root hilang tanpa membuatnya. Root yang dipulihkan
+  dapat dibaca lagi. Metadata read-only, tanpa checkbox/AI/batch/simpan; kembali
+  ke Your assets mengembalikan draft. Pencarian nama/ekstensi tidak membedakan
+  kapital, pilihan tersembunyi tetap dihitung, dan pencarian/sorting kedua section
+  terpisah. Enter pada header native berhasil membuka accordion Output.
+- Screenshot kedua section mencakup **ID/EN × light/dark** pada **1440×900 dan
+  1024×700** (16 capture), tanpa overflow horizontal atau runtime error pada
+  pemeriksaan. Screenshot berada di `/tmp/stock-sidebar-qa/`. Tidak ada perubahan
+  dependensi atau permintaan provider AI. Distribusi berikutnya dicatat di bawah.
+
 Tanggal: 18 Oktober 2026. Lingkungan: Fedora 44 x86_64, Rust 1.99, Node.js 22.23, WebKitGTK 2.54.0. Target awal adalah desktop Linux.
 
 ## Backend
@@ -95,6 +144,31 @@ Hasil impor CSV pada portal Shutterstock belum diverifikasi. Ekspor tidak
 mengunggah apa pun atau memanggil provider AI.
 
 ## Distribusi
+
+Pembaruan lanjutan **22 Oktober 2026** membangun dan memasang ulang RPM
+**0.1.1-1 x86_64**, termasuk input search tersembunyi dan ikon search di kedua
+header sidebar. `npm run bundle` dan `pkexec rpm -Uvh --replacepkgs` berhasil;
+`rpm -V` bersih dan semua library teresolusi. SHA-256 executable terpasang cocok
+dengan payload RPM: `0455ade606f12c1ac5babebb11ab5e0317e62c128ac9d01ea9c7f927aa838065`.
+Smoke check binary terpasang dari `tauri://localhost` memverifikasi kondisi
+search awal tersembunyi, buka/fokus, filter, tutup/reset, ikon Output membuka
+accordion dan inputnya, serta refresh dan metadata Output read-only.
+Pemeriksaan menggunakan konfigurasi dan fixture sementara di
+`/tmp/stock-search-install-qa/`, tanpa mengubah settings atau aset kerja pengguna.
+
+Pada **22 Oktober 2026**, `npm run bundle` membangun ulang RPM
+**0.1.1-1 x86_64** dari perubahan settings, refresh workspace, accordion Output,
+dan pencarian nama. Paket dipasang melalui `pkexec rpm -Uvh --replacepkgs`.
+`rpm -V stock-asset-metadata` bersih; SHA-256 executable terpasang cocok dengan
+payload RPM: `6fa917aaddb61a7b7de5b50d9071c2ac3e0a1c10ac471b445d860afcf2a19380`.
+Semua library executable teresolusi dan dependensi Ghostscript/FFmpeg tetap ada.
+
+Smoke check `/usr/bin/stock-asset-metadata` melalui WebKitWebDriver memakai
+konfigurasi XDG dan fixture sementara: aplikasi membuka frontend terbundel dari
+`tauri://localhost`, memulihkan root aset/output, menemukan file baru lewat
+Refresh, dan menampilkan Output dengan metadata read-only serta AI/simpan
+nonaktif. Screenshot berada di `/tmp/stock-install-qa/installed-output.png`.
+Tidak ada perubahan pada settings atau aset kerja pengguna dalam smoke check.
 
 Paket RPM **0.1.1-1 x86_64** dibangun ulang pada 18 Oktober 2026 untuk fitur
 ekspor CSV Shutterstock. `npm run bundle` lulus; smoke check binary release

@@ -14,6 +14,7 @@
           <path d="M5 12h14" />
   <path d="M12 5v14" />
         </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></symbol>
         <symbol id="i-sort-asc" viewBox="0 0 24 24"><path d="m3 8 4-4 4 4M7 4v16M11 12h4M11 16h7M11 20h10" /></symbol>
         <symbol id="i-sort-desc" viewBox="0 0 24 24"><path d="m3 16 4 4 4-4M7 20V4M11 4h10M11 8h7M11 12h4" /></symbol>
         <symbol id="i-folder" viewBox="0 0 24 24">
@@ -109,10 +110,10 @@
           <button
             id="reload"
             class="icon-button"
-            title="Muat ulang file terpilih"
-            aria-label="Muat ulang file terpilih"
+            title="Pindai ulang aset dan keluaran"
+            aria-label="Pindai ulang aset dan keluaran"
             disabled
-           data-i18n-title="Muat ulang file terpilih" data-i18n-aria-label="Muat ulang file terpilih">
+           data-i18n-title="Pindai ulang aset dan keluaran" data-i18n-aria-label="Pindai ulang aset dan keluaran">
             <svg class="icon" aria-hidden="true"><use href="#i-refresh" /></svg>
           </button>
         </div>
@@ -120,11 +121,20 @@
 
       <main class="workspace" id="workspace">
         <aside id="asset-panel" class="asset-panel" aria-labelledby="assets-title">
-          <div class="panel-heading">
-            <h1 id="assets-title"><span data-i18n="Aset Anda">Aset Anda</span></h1>
-            <span id="asset-count" class="count">0</span>
+          <section id="assets-section" class="library-section expanded">
+            <div class="library-header">
+              <h1 id="assets-title" class="library-heading"><button id="assets-toggle" class="library-toggle" type="button" aria-expanded="true" aria-controls="assets-content"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg><span data-i18n="Aset Anda">Aset Anda</span><span id="asset-count" class="count">0</span></button></h1>
+              <button id="assets-search-toggle" class="icon-button library-search-toggle" type="button" aria-expanded="false" aria-controls="asset-search-panel" aria-label="Buka pencarian" title="Buka pencarian" data-i18n-aria-label="Buka pencarian" data-i18n-title="Buka pencarian"><svg class="icon" aria-hidden="true"><use href="#i-search" /></svg></button>
+            </div>
+            <div id="assets-content" class="library-content" role="region" aria-labelledby="assets-toggle">
+            <div id="asset-browser" class="asset-browser">
+          <p id="output-path" class="library-path" hidden></p>
+          <div id="asset-search-panel" class="asset-search" hidden>
+            <label id="search-label" for="asset-search" data-i18n="Cari nama file">Cari nama file</label>
+            <div class="search-input-row"><input id="asset-search" type="search" autocomplete="off" placeholder="Cari nama file…" data-i18n-placeholder="Cari nama file…" /><button id="clear-search" class="icon-button" type="button" aria-label="Hapus pencarian" title="Hapus pencarian" data-i18n-aria-label="Hapus pencarian" data-i18n-title="Hapus pencarian"><svg class="icon" aria-hidden="true"><use href="#i-x" /></svg></button></div>
+            <span id="search-count" role="status"></span>
           </div>
-          <div class="selection-bar">
+          <div id="selection-bar" class="selection-bar">
             <label
               ><input id="select-all" type="checkbox" disabled /><span data-i18n="Pilih semua">Pilih semua</span></label
             ><span id="selected-count"><span data-i18n="0 dipilih">0 dipilih</span></span>
@@ -145,11 +155,17 @@
             class="asset-list"
             aria-label="Daftar aset"
            data-i18n-aria-label="Daftar aset"></div>
-          <div id="list-empty" class="list-empty">
-            <svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg>
-            <p><span data-i18n="Belum ada aset">Belum ada aset</span></p>
-            <span><span data-i18n="Tambahkan file atau folder">Tambahkan file atau folder</span><br /><span data-i18n="untuk mulai menyunting.">untuk mulai menyunting.</span></span>
-          </div>
+          <div id="list-empty" class="list-empty"><p id="list-empty-text"></p></div>
+            </div>
+            </div>
+          </section>
+          <section id="output-section" class="library-section">
+            <div class="library-header">
+              <h2 class="library-heading"><button id="output-toggle" class="library-toggle" type="button" aria-expanded="false" aria-controls="output-content"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg><span data-i18n="Keluaran">Keluaran</span><span id="output-count" class="count">0</span></button></h2>
+              <button id="output-search-toggle" class="icon-button library-search-toggle" type="button" aria-expanded="false" aria-controls="asset-search-panel" aria-label="Buka pencarian" title="Buka pencarian" data-i18n-aria-label="Buka pencarian" data-i18n-title="Buka pencarian"><svg class="icon" aria-hidden="true"><use href="#i-search" /></svg></button>
+            </div>
+            <div id="output-content" class="library-content" role="region" aria-labelledby="output-toggle" hidden></div>
+          </section>
           <div class="asset-panel-footer">
             <span class="status-dot"></span><span data-i18n="6 format, satu ruang kerja">6 format, satu ruang kerja</span></div>
         </aside>
@@ -200,7 +216,7 @@
                 ><span data-i18n="Centang field yang ingin diterapkan ke pilihan. Field lain tetap dipertahankan.">Centang field yang ingin diterapkan ke pilihan. Field lain tetap dipertahankan.</span></span
               >
             </div>
-            <section class="ai-controls" aria-labelledby="ai-controls-title">
+            <section id="ai-controls" class="ai-controls" aria-labelledby="ai-controls-title">
               <div class="ai-controls-heading">
                 <h3 id="ai-controls-title"><span data-i18n="Generate dengan AI">Generate dengan AI</span></h3>
                 <span><span data-i18n="Draft aset aktif">Draft aset aktif</span></span>
@@ -303,6 +319,7 @@
               </fieldset>
             </form>
             <div id="file-error" class="inline-error" role="alert" hidden></div>
+            <button id="discard-reload" type="button" hidden data-i18n="Buang draft dan muat ulang">Buang draft dan muat ulang</button>
             <div id="save-result" class="save-result" hidden></div>
             <div class="metadata-note">
               <svg class="icon" aria-hidden="true"><use href="#i-file" /></svg>

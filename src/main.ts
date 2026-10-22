@@ -8,6 +8,7 @@ import type {
   AppPreferences,
   FolderStatus,
   Inspection,
+  Asset,
   AssetDraft,
   AiGenerationRequest,
   AiModelOption,
@@ -55,8 +56,20 @@ function saveLocalChoice(key: string, value: string) {
   try { localStorage.setItem(`stock-asset-metadata.${key}`, value); }
   catch { /* Controls still work without persistence. */ }
 }
-let sortField = localChoice("sort-field", ["name", "createdAt", "modifiedAt"] as const);
-let sortDirection = localChoice("sort-direction", ["asc", "desc"] as const);
+type Library = "assets" | "output";
+let library: Library = "assets";
+const views = {
+  assets: { searchOpen: false, query: "", scroll: 0, sortField: localChoice("sort-field", ["name", "createdAt", "modifiedAt"] as const), sortDirection: localChoice("sort-direction", ["asc", "desc"] as const) },
+  output: { searchOpen: false, query: "", scroll: 0, sortField: localChoice("output-sort-field", ["name", "createdAt", "modifiedAt"] as const), sortDirection: localChoice("output-sort-direction", ["asc", "desc"] as const) },
+};
+const outputAssets = new Map<string, AssetDraft>();
+let activeOutput: string | null = null;
+let outputRoot = "";
+let outputError: FolderStatus["error"] = null;
+let outputLoading = false;
+const viewAssets = () => library === "assets" ? assets : outputAssets;
+const matchesSearch = (asset: AssetDraft) => asset.name.toLowerCase().includes(views[library].query.trim().toLowerCase());
+const visibleAssets = () => [...viewAssets().values()].filter(matchesSearch);
 let aiResultMode = localChoice("ai-result-mode", ["separate", "title", "description"] as const);
 const folders = new Map<string, FolderStatus>();
 const explicitFiles = new Set<string>();
@@ -165,9 +178,11 @@ const dirty = (asset: AssetDraft) =>
       : asset.metadata,
     asset.draft,
   );
-const current = () => (active ? assets.get(active) : undefined);
+const current = () => library === "output"
+  ? (activeOutput ? outputAssets.get(activeOutput) : undefined)
+  : (active ? assets.get(active) : undefined);
 const targets = () =>
-  [...selected]
+  (library === "output" ? [] : [...selected])
     .map((path) => assets.get(path)!)
     .filter((asset) => asset && !asset.error && dirty(asset));
 const sizeText = (size: number) =>
@@ -221,8 +236,10 @@ function requireDesktop() {
 }
 
 function assetRow(asset: AssetDraft) {
+    const output = library === "output";
+    const isActive = (output ? activeOutput : active) === asset.path;
     const row = document.createElement("div");
-    row.className = `asset-row${active === asset.path ? " active" : ""}`;
+    row.className = `asset-row${isActive ? " active" : ""}`;
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selected.has(asset.path);
@@ -241,7 +258,7 @@ function assetRow(asset: AssetDraft) {
     button.className = "asset-item";
     button.disabled = busy || aiBusy;
     button.title = asset.path;
-    button.setAttribute("aria-pressed", String(active === asset.path));
+    button.setAttribute("aria-pressed", String(isActive));
     const name = document.createElement("strong");
     name.textContent = asset.name;
     const detail = document.createElement("span");
@@ -250,6 +267,7 @@ function assetRow(asset: AssetDraft) {
     const hasError = asset.error || asset.saveError;
     status.textContent = hasError
       ? t("Gagal · lihat detail")
+      : output ? t("Hanya baca")
       : dirty(asset)
         ? t("Belum disimpan")
         : asset.savedCopy
@@ -264,13 +282,17 @@ function assetRow(asset: AssetDraft) {
         : "asset-status";
     button.append(name, detail, status);
     button.addEventListener("click", () => {
-      active = asset.path;
-      selected.clear();
-      selected.add(asset.path);
+      if (output) activeOutput = asset.path;
+      else {
+        active = asset.path;
+        selected.clear();
+        selected.add(asset.path);
+      }
       render(true);
       void loadPreview();
     });
-    row.append(checkbox, button);
+    if (!output) row.append(checkbox);
+    row.append(button);
     return row;
 }
 
@@ -281,6 +303,7 @@ function owner(path: string) {
 }
 
 function disclosure(key: string, title: string, count: number, folder = false) {
+  key = `${library}:${key}`;
   const node = document.createElement("details");
   node.className = "asset-group";
   node.open = disclosures.get(key) ?? true;
@@ -301,6 +324,7 @@ function disclosure(key: string, title: string, count: number, folder = false) {
 function compareAssets(a: AssetDraft, b: AssetDraft): number {
   const byName = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
   const tie = byName || a.path.localeCompare(b.path);
+  const { sortField, sortDirection } = views[library];
   const direction = sortDirection === "asc" ? 1 : -1;
   if (sortField === "name") return direction * tie;
   const left = a[sortField];
@@ -339,45 +363,108 @@ function appendTree(container: HTMLElement, directory: string, items: AssetDraft
 function renderList() {
   const list = el("asset-list");
   const scroll = list.scrollTop;
+  const output = library === "output";
+  const items = visibleAssets();
+  const query = views[library].query.trim();
   list.replaceChildren();
-  for (const folder of folders.values()) {
-    const items = [...assets.values()].filter((asset) => owner(asset.path) === folder.path);
-    const name = folder.path.split("/").filter(Boolean).pop() ?? folder.path;
-    const node = disclosure(`root:${folder.path}`, name, items.length, true);
-    const summary = node.querySelector("summary")!;
-    summary.title = folder.path;
-    const remove = document.createElement("button");
-    remove.className = "remove-folder icon-button";
-    remove.title = t("Keluarkan folder dari daftar");
-    remove.setAttribute("aria-label", t("Keluarkan folder {0} dari daftar", name));
-    remove.disabled = busy || aiBusy || settingsBusy;
-    remove.append(icon("x"));
-    remove.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); void removeFolder(folder.path); });
-    summary.append(remove);
-    if (folder.error || !items.length) {
-      const status = document.createElement("p");
-      status.className = folder.error ? "folder-status error-text" : "folder-status";
-      status.textContent = folder.error ? errorText(folder.error) : t("Tidak ada aset di folder ini.");
-      node.append(status);
+  if (output) appendTree(list, outputRoot, items);
+  else {
+    for (const folder of folders.values()) {
+      const children = items.filter((asset) => owner(asset.path) === folder.path);
+      if (query && !children.length && !folder.error) continue;
+      const name = folder.path.split("/").filter(Boolean).pop() ?? folder.path;
+      const node = disclosure(`root:${folder.path}`, name, children.length, true);
+      const summary = node.querySelector("summary")!;
+      summary.title = folder.path;
+      const remove = document.createElement("button");
+      remove.className = "remove-folder icon-button";
+      remove.title = t("Keluarkan folder dari daftar");
+      remove.setAttribute("aria-label", t("Keluarkan folder {0} dari daftar", name));
+      remove.disabled = busy || aiBusy || settingsBusy;
+      remove.append(icon("x"));
+      remove.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); void removeFolder(folder.path); });
+      summary.append(remove);
+      if (folder.error || !children.length) {
+        const status = document.createElement("p");
+        status.className = folder.error ? "folder-status error-text" : "folder-status";
+        status.textContent = folder.error ? errorText(folder.error) : t("Tidak ada aset di folder ini.");
+        node.append(status);
+      }
+      appendTree(node, folder.path, children);
+      list.append(node);
     }
-    appendTree(node, folder.path, items);
-    list.append(node);
-  }
-  const extra = [...assets.values()].filter((asset) => !owner(asset.path));
-  if (extra.length) {
-    const node = disclosure("extra", t("File tambahan"), extra.length);
-    appendTree(node, "", extra);
-    list.append(node);
+    const extra = items.filter((asset) => !owner(asset.path));
+    if (extra.length) {
+      const node = disclosure("extra", t("File tambahan"), extra.length);
+      appendTree(node, "", extra);
+      list.append(node);
+    }
   }
   list.scrollTop = scroll;
-  el("list-empty").hidden = assets.size > 0 || folders.size > 0;
-  list.hidden = !el("list-empty").hidden;
+  const empty = el("list-empty");
+  empty.hidden = output ? !outputError && !outputLoading && items.length > 0
+    : query ? items.length > 0 : assets.size > 0 || folders.size > 0;
+  el("list-empty-text").textContent = output && outputLoading ? t("Memindai keluaran…")
+    : output && outputError ? errorText(outputError)
+    : query && !items.length ? t("Tidak ada nama file yang cocok.")
+    : output ? t("Belum ada aset keluaran. Simpan salinan untuk melihat hasil di sini.")
+    : t("Tambahkan file atau folder untuk mulai menyunting.");
+  empty.classList.toggle("error-text", output && !!outputError);
+  list.hidden = !empty.hidden && !items.length;
   el("asset-count").textContent = String(assets.size);
-  el("selected-count").textContent = t("{0} dipilih", selected.size);
+  el("output-count").textContent = String(outputAssets.size);
+  el("asset-search-panel").hidden = !views[library].searchOpen;
+  for (const name of ["assets", "output"] as const) {
+    const open = name === library && views[name].searchOpen;
+    const button = el<HTMLButtonElement>(`${name}-search-toggle`);
+    const label = t(open ? "Tutup pencarian {0}" : "Buka pencarian {0}", t(name === "assets" ? "Aset Anda" : "Keluaran"));
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  }
+  el("search-count").textContent = query ? t("{0} dari {1} aset", items.length, viewAssets().size) : "";
+  el<HTMLButtonElement>("clear-search").disabled = !views[library].query;
+  el("selection-bar").hidden = output;
+  el("output-path").hidden = !output;
+  el("output-path").textContent = preferences?.outputDir ?? "";
+  el("output-path").title = preferences?.outputDir ?? "";
+  const visibleSelected = items.filter((asset) => selected.has(asset.path)).length;
+  const hiddenSelected = selected.size - visibleSelected;
+  el("selected-count").textContent = hiddenSelected > 0
+    ? t("{0} dipilih ({1} tersembunyi)", selected.size, hiddenSelected) : t("{0} dipilih", selected.size);
   const all = el<HTMLInputElement>("select-all");
-  all.checked = assets.size > 0 && selected.size === assets.size;
-  all.indeterminate = selected.size > 0 && selected.size < assets.size;
-  all.disabled = busy || aiBusy || assets.size === 0;
+  all.checked = items.length > 0 && visibleSelected === items.length;
+  all.indeterminate = visibleSelected > 0 && visibleSelected < items.length;
+  all.disabled = busy || aiBusy || !items.length || output;
+}
+
+function switchLibrary(next: Library) {
+  if (busy || aiBusy || settingsBusy || next === library) return;
+  views[library].scroll = el("asset-list").scrollTop;
+  library = next;
+  for (const name of ["assets", "output"] as const) {
+    el(`${name}-section`).classList.toggle("expanded", name === library);
+    el(`${name}-toggle`).setAttribute("aria-expanded", String(name === library));
+    el(`${name}-content`).hidden = name !== library;
+  }
+  el(`${library}-content`).append(el("asset-browser"));
+  el<HTMLInputElement>("asset-search").value = views[library].query;
+  render(true);
+  el("asset-list").scrollTop = views[library].scroll;
+  void loadPreview();
+}
+
+function toggleLibrarySearch(name: Library) {
+  if (busy || aiBusy || settingsBusy) return;
+  const open = name !== library || !views[name].searchOpen;
+  switchLibrary(name);
+  views[name].searchOpen = open;
+  if (!open) {
+    views[name].query = "";
+    el<HTMLInputElement>("asset-search").value = "";
+  }
+  renderList();
+  el(open ? "asset-search" : `${name}-search-toggle`).focus();
 }
 
 function renderKeywords() {
@@ -405,10 +492,10 @@ function renderKeywords() {
       button.setAttribute("aria-label", button.title);
       button.append(icon(direction));
       button.disabled =
-        busy || aiBusy || index + step < 0 || index + step >= value.length;
+        library === "output" || busy || aiBusy || index + step < 0 || index + step >= value.length;
       button.addEventListener("click", () => {
         const asset = current();
-        if (!asset) return;
+        if (!asset || library === "output" || busy || aiBusy) return;
         [asset.draft.keywords[index], asset.draft.keywords[index + step]] = [
           asset.draft.keywords[index + step],
           asset.draft.keywords[index],
@@ -425,7 +512,13 @@ function renderKeywords() {
 
 function render(updateFields = false) {
   const asset = current();
+  const output = library === "output";
+  const { sortField, sortDirection } = views[library];
   renderList();
+  for (const name of ["assets", "output"]) {
+    el<HTMLButtonElement>(`${name}-toggle`).disabled = busy || aiBusy || settingsBusy;
+    el<HTMLButtonElement>(`${name}-search-toggle`).disabled = busy || aiBusy || settingsBusy;
+  }
   el<HTMLSelectElement>("asset-sort").value = sortField;
   const directionLabel = sortDirection === "asc"
     ? t("Urutan naik; klik untuk menurun") : t("Urutan turun; klik untuk menaik");
@@ -437,15 +530,19 @@ function render(updateFields = false) {
   el<HTMLFieldSetElement>("editor-fields").disabled =
     busy || aiBusy || !asset || !!asset.error;
   for (const id of ["add-files", "add-folder", "empty-add", "choose-output"])
-    el<HTMLButtonElement>(id).disabled = busy || aiBusy;
-  el<HTMLButtonElement>("reload").disabled = busy || aiBusy || selected.size === 0;
+    el<HTMLButtonElement>(id).disabled = busy || aiBusy || settingsBusy;
+  el<HTMLButtonElement>("reload").disabled = !native || busy || aiBusy || settingsBusy || !preferences;
   el<HTMLSelectElement>("save-mode").disabled = !native || busy || aiBusy || settingsBusy;
   el<HTMLButtonElement>("save-settings").disabled = !native || busy || aiBusy || settingsBusy || !preferences;
   el<HTMLButtonElement>("clear-preview-cache").disabled = !native || previewCacheBusy;
   el<HTMLButtonElement>("choose-output").disabled = !native || busy || aiBusy || settingsBusy;
   el<HTMLTextAreaElement>("additional-context").disabled = busy || aiBusy || !asset || !!asset.error;
   el<HTMLButtonElement>("open-settings").disabled = !native || busy || aiBusy || settingsBusy;
-  const hasAsset = !!asset && !asset.error;
+  el("ai-controls").hidden = output;
+  for (const field of ["title", "description", "keywords"]) {
+    el<HTMLInputElement | HTMLTextAreaElement>(field).readOnly = output;
+  }
+  const hasAsset = !!asset && !asset.error && !output;
   el<HTMLButtonElement>("generate-title-description").disabled =
     !native || busy || aiBusy || !hasAsset;
   el<HTMLButtonElement>("generate-keywords").disabled =
@@ -460,7 +557,7 @@ function render(updateFields = false) {
   el<HTMLButtonElement>("generate-keywords").innerHTML = aiBusy
     ? '<span class="loading-dot" aria-hidden="true"></span>' + t("Generating…")
     : '<svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg>' + t("Generate Keywords");
-  const batch = selected.size > 1;
+  const batch = !output && selected.size > 1;
   el("batch-notice").hidden = !batch;
   el("batch-title").textContent = t("{0} aset dipilih", selected.size);
   document.querySelectorAll<HTMLElement>(".batch-toggle").forEach((label) => {
@@ -488,12 +585,13 @@ function render(updateFields = false) {
     ? t("Belum ada aset")
     : asset.error || asset.saveError
       ? t("Perlu perhatian")
+      : output ? t("Hanya baca")
       : dirty(asset)
         ? t("Belum disimpan")
         : t("Siap");
   el("draft-status").classList.toggle("modified-text", !!asset && dirty(asset));
   el("editor-help").textContent = asset
-    ? asset.name
+    ? output ? t("{0} · Keluaran hanya baca", asset.name) : asset.name
     : t("Pilih sebuah aset. Metadata yang sudah tertanam akan ditampilkan di sini.");
   const error = asset?.error || asset?.saveError;
   el("file-error").hidden = !error;
@@ -501,6 +599,8 @@ function render(updateFields = false) {
     ? t("{0} Muat ulang file jika sumber telah berubah.", errorText(error))
     : "";
   const saved = asset?.savedCopy || asset?.backupPath;
+  el("discard-reload").hidden = output || !asset || !(asset.saveError || asset.error);
+  el<HTMLButtonElement>("discard-reload").disabled = busy || aiBusy || settingsBusy;
   el("save-result").hidden = !saved;
   el("save-result").textContent = asset?.savedCopy
     ? t("Salinan: {0}", asset.savedCopy)
@@ -547,8 +647,8 @@ async function loadPreview() {
     : t("Pilih aset untuk melihat isinya");
   el("preview-format").textContent = asset?.format.toUpperCase() ?? t("Preview").toUpperCase();
   el("preview-empty").hidden = false;
-  el("empty-add").hidden = !!asset;
-  el("format-list").hidden = !!asset;
+  el("empty-add").hidden = !!asset || library === "output";
+  el("format-list").hidden = !!asset || library === "output";
   el("preview-caption").textContent = asset
     ? asset.path
     : t("Aset tetap berada di perangkat Anda.");
@@ -561,7 +661,13 @@ async function loadPreview() {
   el("empty-description").textContent = asset
     ? t("Metadata dan preview diproses secara terpisah.")
     : t("Tambahkan aset untuk menyunting title, description,\ndan keywords tanpa mengubah konten media.");
-  if (!asset) return;
+  if (!asset) {
+    if (library === "output") {
+      el("empty-title").textContent = t("Keluaran");
+      el("empty-description").textContent = t("Pilih keluaran untuk memeriksa preview dan metadata.");
+    }
+    return;
+  }
   el("empty-icon").setAttribute("href", "#i-image");
   if (asset.error) {
     el("empty-title").textContent = t("Preview tidak tersedia");
@@ -603,41 +709,111 @@ async function loadPreview() {
   }
 }
 
+function draftFor(asset: Asset, previous?: AssetDraft): AssetDraft {
+  return {
+    ...asset, draft: copy(asset.metadata), additionalContext: previous?.additionalContext ?? "",
+    lastSavedCopy: null, savedCopy: null, backupPath: null, saveError: null,
+  };
+}
+
+function mergeInspection(report: Inspection, reload: boolean, preservePaths: Set<string>) {
+  report.folders.forEach((folder) => folders.set(folder.path, folder));
+  if (!reload) {
+    report.files.forEach((path) => explicitFiles.add(path));
+    if (preferences) preferences.folders = [...folders.keys()];
+  }
+  const incoming = new Set(report.assets.map((asset) => asset.path));
+  if (reload) {
+    for (const asset of assets.values()) {
+      if (incoming.has(asset.path)) continue;
+      const scanned = report.folders.some((folder) => inside(asset.path, folder.path) && !folder.error);
+      const failed = report.folders.some((folder) => inside(asset.path, folder.path) && !!folder.error);
+      if (!scanned || failed || explicitFiles.has(asset.path)) continue;
+      if (preservePaths.has(asset.path)) {
+        asset.saveError = { key: "Sumber tidak tersedia. Draft tetap dipertahankan.", params: [], detail: null };
+      } else {
+        assets.delete(asset.path);
+        selected.delete(asset.path);
+      }
+    }
+  }
+  for (const asset of report.assets) {
+    const previous = assets.get(asset.path);
+    if (previous && preservePaths.has(asset.path)) {
+      previous.saveError = asset.error;
+      continue;
+    }
+    if (!previous || reload) assets.set(asset.path, draftFor(asset, previous));
+  }
+  if (!active || !assets.has(active)) {
+    active = [...selected].find((path) => assets.has(path)) ?? assets.keys().next().value ?? null;
+    if (active && !selected.size) selected.add(active);
+  }
+}
+
+async function readOutputs() {
+  if (!native || !preferences) return;
+  if (outputRoot !== preferences.outputDir) {
+    outputAssets.clear();
+    activeOutput = null;
+    outputRoot = preferences.outputDir;
+    views.output.scroll = 0;
+  }
+  outputLoading = true;
+  outputError = null;
+  render();
+  try {
+    const report = await invoke<Inspection>("inspect_output_assets");
+    outputRoot = report.folders[0]?.path ?? preferences.outputDir;
+    outputError = report.folders.find((folder) => folder.error)?.error ?? null;
+    outputAssets.clear();
+    report.assets.forEach((asset) => outputAssets.set(asset.path, draftFor(asset)));
+    if (!activeOutput || !outputAssets.has(activeOutput)) activeOutput = outputAssets.keys().next().value ?? null;
+  } catch (error) {
+    outputError = typeof error === "object" && error !== null && "key" in error
+      ? error as NonNullable<FolderStatus["error"]> : String(error);
+  } finally {
+    outputLoading = false;
+    render(true);
+    if (library === "output") void loadPreview();
+  }
+}
+
+async function refreshWorkspace() {
+  if (!requireDesktop() || busy || aiBusy || settingsBusy || !preferences) return;
+  const paths = [...new Set([...folders.keys(), ...explicitFiles])];
+  const preservePaths = new Set([...assets.values()].filter(dirty).map((asset) => asset.path));
+  busy = true;
+  el("progress-text").textContent = t("Membaca metadata…");
+  el<HTMLProgressElement>("progress").removeAttribute("value");
+  render();
+  try {
+    if (paths.length) {
+      const report = await invoke<Inspection>("inspect_assets", { paths, refresh: true, preservePaths: [...preservePaths] });
+      mergeInspection(report, true, preservePaths);
+    }
+  } catch (error) {
+    message(t("Aset tidak dapat dibaca: {0}", errorText(error)), true);
+  }
+  await readOutputs();
+  busy = false;
+  render(true);
+  void loadPreview();
+}
+
 async function importAssets(paths: string[], reload = false) {
-  if (busy || aiBusy || !paths.length) return;
+  if (busy || aiBusy || settingsBusy || !paths.length) return;
+  if (!reload && library !== "assets") switchLibrary("assets");
   busy = true;
   el("progress-text").textContent = t("Membaca metadata…");
   el<HTMLProgressElement>("progress").removeAttribute("value");
   render();
   try {
     const report = await invoke<Inspection>("inspect_assets", { paths, refresh: reload });
-    const incoming = report.assets;
-    if (!reload) {
-      report.folders.forEach((folder) => folders.set(folder.path, folder));
-      report.files.forEach((path) => explicitFiles.add(path));
-      if (preferences) preferences.folders = [...folders.keys()];
-    }
-    for (const asset of incoming) {
-      if (!assets.has(asset.path) || reload)
-        assets.set(asset.path, {
-          ...asset,
-          draft: copy(asset.metadata),
-          additionalContext: assets.get(asset.path)?.additionalContext ?? "",
-          lastSavedCopy: null,
-          savedCopy: null,
-          backupPath: null,
-          saveError: null,
-        });
-    }
-    if (!active && incoming.length) {
-      active = incoming[0].path;
-      selected.add(active);
-    }
-    message(
-      incoming.length
-        ? t("{0} aset dibaca{1}", incoming.length, incoming.some((a) => a.error) ? t(". Beberapa file perlu diperiksa.") : ".")
-        : t("Tidak ada format yang didukung dalam pilihan tersebut."),
-    );
+    mergeInspection(report, reload, new Set());
+    message(report.assets.length
+      ? t("{0} aset dibaca{1}", report.assets.length, report.assets.some((asset) => asset.error) ? t(". Beberapa file perlu diperiksa.") : ".")
+      : t("Tidak ada format yang didukung dalam pilihan tersebut."));
   } catch (error) {
     message(t("Aset tidak dapat dibaca: {0}", errorText(error)), true);
   } finally {
@@ -795,6 +971,7 @@ async function save(confirmed = false) {
       ? t("CSV gagal di {0}: {1}", result.directory, errorText(result.error))
       : t("CSV tersimpan: {0} ({1} video).", result.outputPath, result.rowCount));
     if (dialog.open) dialog.close();
+    await readOutputs();
     message([summary, ...csvMessages].join("\n"), failed > 0 || csvResults.some((result) => !!result.error));
   } catch (error) {
     if (dialog.open) {
@@ -1012,6 +1189,7 @@ async function saveSettings() {
     appSaved = true;
     if (previousOutput !== preferences.outputDir) {
       assets.forEach((asset) => { asset.lastSavedCopy = null; asset.savedCopy = null; });
+      await readOutputs();
     }
     applyAppearance(preferences.language, preferences.theme);
     if (providerChanged && aiSettings) {
@@ -1108,7 +1286,7 @@ function generationRequest(asset: AssetDraft): AiGenerationRequest {
 }
 
 async function generateTitleDescription() {
-  if (!requireDesktop() || busy || aiBusy) return;
+  if (!requireDesktop() || busy || aiBusy || settingsBusy || library === "output") return;
   const asset = current();
   if (!asset || asset.error) return;
   const resultMode = aiResultMode;
@@ -1138,7 +1316,7 @@ async function generateTitleDescription() {
 }
 
 async function generateKeywords() {
-  if (!requireDesktop() || busy || aiBusy) return;
+  if (!requireDesktop() || busy || aiBusy || settingsBusy || library === "output") return;
   const asset = current();
   if (!asset || asset.error) return;
   aiBusy = true;
@@ -1255,14 +1433,30 @@ function closeSettings() {
   el<HTMLButtonElement>("open-settings").focus();
 }
 
+for (const name of ["assets", "output"] as const) {
+  el(`${name}-search-toggle`).addEventListener("click", () => toggleLibrarySearch(name));
+}
+el("assets-toggle").addEventListener("click", () => switchLibrary("assets"));
+el("output-toggle").addEventListener("click", () => switchLibrary("output"));
+el("asset-search").addEventListener("input", () => {
+  views[library].query = el<HTMLInputElement>("asset-search").value;
+  el("asset-list").scrollTop = 0;
+  renderList();
+});
+el("clear-search").addEventListener("click", () => {
+  views[library].query = "";
+  el<HTMLInputElement>("asset-search").value = "";
+  renderList();
+  el("asset-search").focus();
+});
 el("asset-sort").addEventListener("change", () => {
-  sortField = el<HTMLSelectElement>("asset-sort").value as typeof sortField;
-  saveLocalChoice("sort-field", sortField);
+  views[library].sortField = el<HTMLSelectElement>("asset-sort").value as typeof views.assets.sortField;
+  saveLocalChoice(library === "assets" ? "sort-field" : "output-sort-field", views[library].sortField);
   render();
 });
 el("asset-sort-direction").addEventListener("click", () => {
-  sortDirection = sortDirection === "asc" ? "desc" : "asc";
-  saveLocalChoice("sort-direction", sortDirection);
+  views[library].sortDirection = views[library].sortDirection === "asc" ? "desc" : "asc";
+  saveLocalChoice(library === "assets" ? "sort-direction" : "output-sort-direction", views[library].sortDirection);
   render();
 });
 el("ai-result-mode").addEventListener("change", () => {
@@ -1329,33 +1523,24 @@ el("metadata-form").addEventListener("submit", (event) => {
   void save();
 });
 el("select-all").addEventListener("change", () => {
-  if (busy || aiBusy) return;
-  selected.clear();
-  if (el<HTMLInputElement>("select-all").checked)
-    assets.forEach((asset) => selected.add(asset.path));
+  if (busy || aiBusy || library !== "assets") return;
+  const checked = el<HTMLInputElement>("select-all").checked;
+  visibleAssets().forEach((asset) => checked ? selected.add(asset.path) : selected.delete(asset.path));
   render();
 });
-el("reload").addEventListener("click", async () => {
-  if (!requireDesktop() || busy || aiBusy) return;
-  if (
-    [...selected].some((path) => dirty(assets.get(path)!)) &&
-    !(await confirm(
-      t("Draft pada file terpilih akan diganti dengan metadata dari disk. Lanjutkan?"),
-      {
-        title: t("Muat ulang aset"),
-        kind: "warning",
-        okLabel: t("Muat ulang"),
-        cancelLabel: t("Kembali"),
-      },
-    ))
-  )
-    return;
-  await importAssets([...selected], true);
+el("reload").addEventListener("click", () => void refreshWorkspace());
+el("discard-reload").addEventListener("click", async () => {
+  const asset = current();
+  if (!asset || library !== "assets" || busy || aiBusy || settingsBusy) return;
+  if (dirty(asset) && !await confirm(t("Draft pada file terpilih akan diganti dengan metadata dari disk. Lanjutkan?"), {
+    title: t("Muat ulang aset"), kind: "warning", okLabel: t("Muat ulang"), cancelLabel: t("Kembali"),
+  })) return;
+  await importAssets([asset.path], true);
 });
 for (const field of ["title", "description", "keywords"] as const) {
   el(field).addEventListener("input", () => {
     const asset = current();
-    if (!asset || busy) return;
+    if (!asset || busy || aiBusy || library === "output") return;
     const value = el<HTMLInputElement | HTMLTextAreaElement>(field).value;
     if (field === "keywords") asset.draft.keywords = keywords(value);
     else asset.draft[field] = value;
@@ -1365,7 +1550,7 @@ for (const field of ["title", "description", "keywords"] as const) {
   el(`apply-${field}`).addEventListener("change", () => render(false));
 }
 el("apply-batch").addEventListener("click", () => {
-  if (aiBusy || busy) return;
+  if (aiBusy || busy || library === "output") return;
   const asset = current();
   if (!asset) return;
   for (const path of selected) {
@@ -1460,14 +1645,14 @@ async function removeFolder(path: string) {
 
 el("additional-context").addEventListener("input", () => {
   const asset = current();
-  if (asset && !busy && !aiBusy) asset.additionalContext = el<HTMLTextAreaElement>("additional-context").value;
+  if (asset && !busy && !aiBusy && library === "assets") asset.additionalContext = el<HTMLTextAreaElement>("additional-context").value;
 });
 
 async function initializeDesktop() {
   try {
     await loadAppPreferences();
     preferences?.folders.forEach((path) => folders.set(path, { path, error: null }));
-    if (folders.size) await importAssets([...folders.keys()]);
+    await refreshWorkspace();
   } catch (error) {
     message(t("Ruang kerja tidak dapat dipulihkan: {0}", errorText(error)), true);
   }

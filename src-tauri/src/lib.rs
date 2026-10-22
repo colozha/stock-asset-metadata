@@ -18,7 +18,7 @@ mod desktop {
         preview,
     };
     use std::{
-        collections::HashMap,
+        collections::{HashMap, HashSet},
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
     };
@@ -27,6 +27,7 @@ mod desktop {
     #[derive(Default)]
     struct AppState {
         snapshots: Arc<Mutex<HashMap<PathBuf, FileStamp>>>,
+        output_previews: Mutex<HashSet<PathBuf>>,
         busy: Mutex<bool>,
         previews: Arc<Mutex<()>>,
     }
@@ -53,12 +54,12 @@ mod desktop {
     async fn inspect_assets(
         paths: Vec<String>,
         refresh: Option<bool>,
+        preserve_paths: Option<Vec<String>>,
         app: tauri::AppHandle,
         state: State<'_, AppState>,
     ) -> Result<files::Inspection, super::messages::AppError> {
         let _worker = lock_worker(&state)?;
-        let mut preferences = load_app_preferences(app.clone())?;
-        let known = preferences.folders.clone();
+        let known = load_app_preferences(app.clone())?.folders;
         let (report, stamps) = tauri::async_runtime::spawn_blocking(move || {
             files::inspect_with_folders(paths, &known)
         })
@@ -66,7 +67,11 @@ mod desktop {
         .map_err(|e| e.to_string())?;
         let mut snapshots = state.snapshots.lock().map_err(|e| e.to_string())?;
         for (path, stamp) in stamps {
-            if refresh.unwrap_or(false) {
+            if refresh.unwrap_or(false)
+                && !preserve_paths.as_ref().is_some_and(|paths| {
+                    paths.iter().any(|saved| Path::new(saved) == path)
+                })
+            {
                 snapshots.insert(path, stamp);
             } else {
                 snapshots.entry(path).or_insert(stamp);
@@ -74,13 +79,35 @@ mod desktop {
         }
         drop(snapshots);
         if !refresh.unwrap_or(false) {
-            for folder in &report.folders {
-                if !preferences.folders.contains(&folder.path) {
-                    preferences.folders.push(folder.path.clone());
+            update_app_preferences(&app, |preferences| {
+                for folder in &report.folders {
+                    if !preferences.folders.contains(&folder.path) {
+                        preferences.folders.push(folder.path.clone());
+                    }
                 }
-            }
-            preferences::save(&preferences_path(&app)?, &preferences)?;
+            })?;
         }
+        Ok(report)
+    }
+
+    #[tauri::command]
+    async fn inspect_output_assets(
+        app: tauri::AppHandle,
+        state: State<'_, AppState>,
+    ) -> Result<files::Inspection, super::messages::AppError> {
+        let _worker = lock_worker(&state)?;
+        let root = load_app_preferences(app)?
+            .output_dir
+            .to_string_lossy()
+            .into_owned();
+        let (report, stamps) = tauri::async_runtime::spawn_blocking(move || {
+            files::inspect_with_folders(vec![root.clone()], &[root])
+        })
+        .await
+        .map_err(|error| error.to_string())?;
+        // Output previews never renew conflict snapshots for editable sources.
+        *state.output_previews.lock().map_err(|error| error.to_string())? =
+            stamps.into_keys().collect();
         Ok(report)
     }
 
@@ -90,6 +117,21 @@ mod desktop {
             .app_config_dir()
             .map_err(|e| e.to_string())?
             .join("app-preferences.json"))
+    }
+
+    fn documents_directory(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+        app.path()
+            .document_dir()
+            .or_else(|_| app.path().home_dir().map(|home| home.join("Documents")))
+            .map_err(|error| format!("Direktori Documents tidak tersedia: {error}"))
+    }
+
+    fn update_app_preferences(
+        app: &tauri::AppHandle,
+        change: impl FnOnce(&mut Preferences),
+    ) -> Result<Preferences, super::messages::AppError> {
+        preferences::update(&preferences_path(app)?, &documents_directory(app)?, change)
+            .map_err(Into::into)
     }
 
     fn preview_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -104,11 +146,7 @@ mod desktop {
     fn load_app_preferences(
         app: tauri::AppHandle,
     ) -> Result<Preferences, super::messages::AppError> {
-        let documents = app
-            .path()
-            .document_dir()
-            .or_else(|_| app.path().home_dir().map(|home| home.join("Documents")))
-            .map_err(|e| format!("Direktori Documents tidak tersedia: {e}"))?;
+        let documents = documents_directory(&app)?;
         preferences::load(&preferences_path(&app)?, &documents).map_err(Into::into)
     }
 
@@ -146,13 +184,12 @@ mod desktop {
         language: preferences::Language,
         theme: preferences::Theme,
     ) -> Result<Preferences, super::messages::AppError> {
-        let mut preferences = load_app_preferences(app.clone())?;
-        preferences.language = language;
-        preferences.theme = theme;
-        preferences.save_mode = save_mode;
-        preferences.output_dir = output_dir;
-        preferences::save(&preferences_path(&app)?, &preferences)?;
-        Ok(preferences)
+        update_app_preferences(&app, |preferences| {
+            preferences.language = language;
+            preferences.theme = theme;
+            preferences.save_mode = save_mode;
+            preferences.output_dir = output_dir;
+        })
     }
 
     #[tauri::command]
@@ -160,10 +197,9 @@ mod desktop {
         app: tauri::AppHandle,
         path: String,
     ) -> Result<Preferences, super::messages::AppError> {
-        let mut preferences = load_app_preferences(app.clone())?;
-        preferences.folders.retain(|folder| folder != &path);
-        preferences::save(&preferences_path(&app)?, &preferences)?;
-        Ok(preferences)
+        update_app_preferences(&app, |preferences| {
+            preferences.folders.retain(|folder| folder != &path);
+        })
     }
 
     #[tauri::command]
@@ -177,6 +213,11 @@ mod desktop {
             .lock()
             .map_err(|e| e.to_string())?
             .contains_key(Path::new(&path))
+            && !state
+                .output_previews
+                .lock()
+                .map_err(|error| error.to_string())?
+                .contains(Path::new(&path))
         {
             return Err("Impor file terlebih dahulu.".into());
         }
@@ -409,6 +450,7 @@ mod desktop {
             .plugin(tauri_plugin_dialog::init())
             .invoke_handler(tauri::generate_handler![
                 inspect_assets,
+                inspect_output_assets,
                 load_app_preferences,
                 open_output_directory,
                 save_app_preferences,

@@ -24,6 +24,7 @@ Metadata editing uses local files. Import files or recursively scan folders, ski
 - One Settings save applies storage, language (ID/EN), theme (light/dark), and changed AI configuration. Incomplete AI configuration remains optional; generated metadata stays English.
 - Save copies by default to the system Documents directory under stock-assets/{format}, grouping JPEG with JPG; fall back to ~/Documents when the system has no Documents configuration. Save mode and output root persist through Settings; optionally replace originals after creating versioned backups.
 - Remove folder references without deleting disk files; missing folders retain a visible error until restored or removed.
+- Browse Your assets and read-only Output through exclusive sidebar accordions, with independent filename search and persisted sorting inside folder/format groups. Refresh rescans imported roots, direct files, and the output directory while preserving metadata drafts and source-conflict protection. Output also refreshes after successful saves and output-directory changes.
 - Work sequentially in a background worker, reporting results per file.
 - Show lightweight image previews, embedded EPS TIFF previews, and video file information.
 - SVG support is UTF-8. Unsupported or malformed files report errors without modifying sources.
