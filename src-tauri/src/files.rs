@@ -272,40 +272,42 @@ pub fn save_one(
         .prefix(".stock-metadata-")
         .suffix(&format!(".{extension}"))
         .tempfile_in(parent)
-        .map_err(|e| e.to_string())?;
-    fs::copy(source, temporary.path()).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?
+        .into_temp_path(); // Adobe XMP requires exclusive access on Windows.
+
+    fs::copy(source, &temporary).map_err(|e| e.to_string())?;
     #[cfg(windows)]
     {
-        let mut permissions = fs::metadata(temporary.path())
+        let mut permissions = fs::metadata(&temporary)
             .map_err(|e| e.to_string())?
             .permissions();
         permissions.set_readonly(false);
-        fs::set_permissions(temporary.path(), permissions).map_err(|e| e.to_string())?;
+        fs::set_permissions(&temporary, permissions).map_err(|e| e.to_string())?;
     }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(temporary.path())
+        let mode = fs::metadata(&temporary)
             .map_err(|e| e.to_string())?
             .permissions()
             .mode();
-        fs::set_permissions(temporary.path(), fs::Permissions::from_mode(mode | 0o200))
+        fs::set_permissions(&temporary, fs::Permissions::from_mode(mode | 0o200))
             .map_err(|e| e.to_string())?;
     }
-    let output_permissions = fs::metadata(temporary.path())
+    let output_permissions = fs::metadata(&temporary)
         .map_err(|e| e.to_string())?
         .permissions();
-    metadata::write(temporary.path(), &value)?;
+    metadata::write(&temporary, &value)?;
     // The SDK can replace the inode, so restore the intended source permissions.
-    fs::set_permissions(temporary.path(), output_permissions).map_err(|e| e.to_string())?;
-    if metadata::read(temporary.path())? != value {
+    fs::set_permissions(&temporary, output_permissions).map_err(|e| e.to_string())?;
+    if metadata::read(&temporary)? != value {
         return Err("Pembacaan ulang metadata tidak sesuai. Sumber tidak diganti.".into());
     }
     // A format handler may replace the temporary inode while updating metadata.
     fs::OpenOptions::new()
         .read(true)
         .write(true)
-        .open(temporary.path())
+        .open(&temporary)
         .and_then(|file| file.sync_all())
         .map_err(|e| e.to_string())?;
     if stamp(source)? != *expected {
@@ -323,7 +325,7 @@ pub fn save_one(
                 match temp.persist_noclobber(&destination) {
                     Ok(_) => break destination,
                     Err(error) if error.error.kind() == std::io::ErrorKind::AlreadyExists => {
-                        temp = error.file;
+                        temp = error.path;
                         destination = parent.join(format!("{stem}_{index}.{extension}"));
                         index += 1;
                     }

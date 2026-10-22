@@ -1,29 +1,25 @@
 # Hasil validasi
 
-## Persiapan installer Windows x64 — 22 Oktober 2026
+## Verifikasi installer Windows x64 — 22 Oktober 2026
 
-- Workflow `Release installers` memisahkan build Fedora RPM dan Windows NSIS;
-  publikasi hanya berjalan pada push tag setelah kedua job berhasil. Pengujian
-  manual hanya menghasilkan artifacts. Workflow lulus `actionlint` 1.7.12;
-  script build dan seluruh step PowerShell lulus parser PowerShell 7.6.7.
-  Konfigurasi Windows gabungan lulus JSON Schema Tauri CLI, termasuk ikon ICO.
-- `npm run build`, 22 tes backend tanpa desktop, dan 30 tes backend dengan
-  desktop lulus di Fedora 44. Roundtrip enam format kini juga mencakup direktori
-  Unicode dengan spasi. Path sidebar diuji dengan drive Windows, UNC, extended
-  path, root drive, dan POSIX; nama file POSIX dengan backslash dipertahankan.
-  `npm run bundle -- --ci -- --locked` berhasil membangun ulang RPM 0.1.1-1.
-- Uji terisolasi pemeriksaan empat aset mengonfirmasi checksum yang valid
-  diterima dan file rusak ditolak. Alur publikasi tiruan mencakup rilis baru,
-  melanjutkan draft, menolak penggantian rilis publik, serta kegagalan API/create/
-  upload tanpa publikasi lanjutan. Tidak ada Release yang dibuat oleh pengujian.
-- Perubahan Windows mencakup Explorer, penemuan Ghostscript, file output preview
-  yang tidak dikunci handle sementara, dan sinkronisasi file dengan akses tulis.
-  Sinkronisasi direktori Unix tidak dipanggil di Windows. Test read-only khusus
-  Windows disertakan untuk memastikan copy tidak mengubah atribut sumber.
-- Build, tes backend, instalasi NSIS, dan pembukaan jendela pada runner Windows
-  asli belum dijalankan dari sesi Linux ini. Step verifikasi tersebut tersedia
-  di workflow; pemeriksaan lokal di atas belum membuktikan kompatibilitas Windows
-  native atau seluruh alur IPC. GitHub branch/tag belum dipush oleh perubahan ini.
+- [Run GitHub Actions 39783833052](https://github.com/colozha/stock-asset-metadata/actions/runs/39783833052)
+  pada branch `fix/windows-settings-path` lulus untuk RPM dan Windows. Karena
+  dijalankan manual, publikasi Release dilewati. Artifact RPM dan installer
+  Windows berhasil diunduh dan checksum `.sha256` keduanya cocok.
+- Tes backend pada runner Fedora lulus **22 tes** (12 unit, 10 integrasi).
+  Runner Windows lulus **30 tes** (20 unit, 10 integrasi), termasuk roundtrip
+  enam format dan copy dari sumber read-only.
+- Installer NSIS **0.1.1 x64** berhasil dipasang secara senyap. Smoke test
+  memastikan `msvcp140.dll` tersedia di folder instalasi dan aplikasi membuka
+  jendela. Pemeriksaan isi artifact mengonfirmasi executable serta delapan DLL
+  runtime Visual C++ berarsitektur x64 ikut di installer.
+- SHA-256 installer Windows:
+  `eb681d03f4f3131a26a2e2a059c5e06016d8ebd3780a27e3d9884626c6de1a24`.
+  SHA-256 RPM: `6ccc2ca1c5e69c8bd6d3e5092559de303e0f407851786310e68b3a8f1b1fe863`.
+  Artifact dapat diunduh dari bagian **Artifacts** pada run tersebut.
+- Smoke test membuktikan instalasi dan startup aplikasi; seluruh alur UI/IPC
+  belum diuji manual pada Windows. Panduan rilis memakai versi berikutnya
+  `v0.1.2`, karena `v0.1.1` sudah dirilis sebelumnya.
 
 ## Workflow GitHub Release RPM — 22 Oktober 2026
 

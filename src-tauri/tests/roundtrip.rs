@@ -352,6 +352,7 @@ fn recursive_folder_import_deduplicates_and_reports_missing_roots() {
     #[cfg(unix)]
     std::os::unix::fs::symlink(&root, nested.join("loop")).unwrap();
     let root_name = root.to_string_lossy().into_owned();
+    let canonical_root = root.canonicalize().unwrap().to_string_lossy().into_owned();
     let missing = directory
         .path()
         .join("missing")
@@ -380,7 +381,7 @@ fn recursive_folder_import_deduplicates_and_reports_missing_roots() {
     assert!(report
         .folders
         .iter()
-        .find(|folder| folder.path == root_name)
+        .find(|folder| folder.path == canonical_root)
         .unwrap()
         .error
         .is_none());
