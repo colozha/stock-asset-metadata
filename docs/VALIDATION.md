@@ -1,5 +1,35 @@
 # Hasil validasi
 
+## Workflow GitHub Release RPM — 22 Oktober 2026
+
+- Workflow `release.yml` lulus `actionlint` 1.7.12; seluruh step shell lulus
+  `bash -n`. Versi action checkout/setup-node dan inputnya diperiksa terhadap
+  repository resmi GitHub Actions.
+- Build bersih memakai image `registry.fedoraproject.org/fedora:44` melalui
+  Podman, dependensi native dari workflow, Node.js 22.23.4, dan Rust stable
+  1.99.1. `npm ci`, tes backend `--locked --no-default-features` (**22 tes**),
+  serta `npm run bundle -- --ci -- --locked` lulus, termasuk TypeScript/Vite.
+  RPM **0.1.1-1 x86_64** berhasil dibuat; dependensi `ghostscript`/`ffmpeg-free`
+  tercantum dan `ldd` tidak menemukan library yang hilang. Checksum `.rpm.sha256`
+  dibuat menggunakan nama relatif dan lulus verifikasi di container maupun host.
+  Salinan paket, checksum, serta log QA ada di `/tmp/stock-release-qa/`.
+- Uji terisolasi menjalankan script validasi versi dari workflow: tag `v0.1.1`
+  diterima, versi berbeda/format tidak valid/prerelease/leading zero ditolak.
+  Ketidaksesuaian setiap manifest dan lockfile, termasuk root package npm,
+  menghentikan proses.
+- Step publikasi diuji dengan pengganti lokal untuk HTTP/GitHub CLI: rilis baru
+  dibuat sebagai draft sebelum publikasi; draft dilanjutkan dengan unggah ulang;
+  rilis publik ditolak tanpa mutasi. Error API, pembuatan draft, atau unggahan
+  menghentikan proses sebelum publikasi. Nama aset dengan spasi tetap utuh.
+- Query GraphQL pencarian Release juga diperiksa secara read-only pada repository
+  tujuan: tag `v0.1.1` belum memiliki Release. GraphQL dipakai karena endpoint
+  REST pencarian berdasarkan tag tidak mencakup draft. GitHub Actions aktif dan
+  kebijakan repository mengizinkan action yang digunakan.
+- Pemeriksaan publikasi di atas tidak mengakses API tulis GitHub. Belum ada
+  commit/tag yang dipush atau Release yang dibuat oleh perubahan ini. Eksekusi
+  GitHub Actions penuh dan unduhan aset dari Release pertama belum diverifikasi;
+  build tidak menggantikan pengujian IPC desktop native.
+
 ## Pencarian dari header sidebar — 22 Oktober 2026
 
 - `npm run build` lulus. Perubahan hanya mencakup frontend dan dokumentasi;

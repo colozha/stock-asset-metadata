@@ -1,0 +1,143 @@
+name: Release RPM
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    container: registry.fedoraproject.org/fedora:44
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euo pipefail {0}
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - name: Install Fedora build dependencies
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            git tar gzip curl-minimal ca-certificates python3 gh \
+            gcc-c++ make pkgconf-pkg-config rpm findutils diffutils \
+            webkit2gtk4.1-devel openssl-devel librsvg2-devel libxdo-devel \
+            ghostscript ffmpeg-free
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release versions
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ['RELEASE_TAG']
+          if not re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', tag):
+              raise SystemExit(f'Invalid stable release tag: {tag}')
+          version = tag[1:]
+          versions = {}
+          for filename in ('package.json', 'src-tauri/tauri.conf.json'):
+              versions[filename] = json.loads(Path(filename).read_text())['version']
+          npm_lock = json.loads(Path('package-lock.json').read_text())
+          versions['package-lock.json'] = npm_lock['version']
+          versions['package-lock.json root'] = npm_lock['packages']['']['version']
+          cargo = tomllib.loads(Path('src-tauri/Cargo.toml').read_text())['package']
+          versions['src-tauri/Cargo.toml'] = cargo['version']
+          cargo_lock = tomllib.loads(Path('src-tauri/Cargo.lock').read_text())
+          versions['src-tauri/Cargo.lock'] = next(
+              p['version'] for p in cargo_lock['package'] if p['name'] == cargo['name']
+          )
+          for filename, actual in versions.items():
+              if actual != version:
+                  raise SystemExit(f'{filename}: expected {version}, got {actual}')
+          print(f'All manifest and lockfile versions match {tag}')
+          PY
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Install Rust stable
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o "$RUNNER_TEMP/rustup-init.sh"
+          sh "$RUNNER_TEMP/rustup-init.sh" -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - run: npm ci
+
+      - name: Test backend
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features
+
+      - name: Build frontend and RPM
+        run: npm run bundle -- --ci -- --locked
+
+      - name: Verify RPM and checksum
+        run: |
+          shopt -s nullglob
+          packages=(src-tauri/target/release/bundle/rpm/*.rpm)
+          test "${#packages[@]}" -eq 1
+          package="${packages[0]}"
+          test "$(rpm -qp --queryformat '%{VERSION}' "$package")" = "${RELEASE_TAG#v}"
+          test "$(rpm -qp --queryformat '%{ARCH}' "$package")" = x86_64
+          rpm -qp --requires "$package" > "$RUNNER_TEMP/rpm-requires.txt"
+          grep -Fx ghostscript "$RUNNER_TEMP/rpm-requires.txt"
+          grep -Fx ffmpeg-free "$RUNNER_TEMP/rpm-requires.txt"
+          ldd src-tauri/target/release/stock-asset-metadata > "$RUNNER_TEMP/ldd.txt"
+          cat "$RUNNER_TEMP/ldd.txt"
+          if grep -F 'not found' "$RUNNER_TEMP/ldd.txt"; then
+            exit 1
+          fi
+          cd src-tauri/target/release/bundle/rpm
+          package="$(basename "$package")"
+          sha256sum "$package" > "$package.sha256"
+          sha256sum --check "$package.sha256"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          # REST lookup by tag omits drafts; GraphQL also finds pending releases.
+          state=$(gh api graphql \
+            -f owner="${GH_REPO%/*}" -f name="${GH_REPO#*/}" -f tag="$RELEASE_TAG" \
+            -f query='query($owner: String!, $name: String!, $tag: String!) {
+              repository(owner: $owner, name: $name) {
+                release(tagName: $tag) { isDraft }
+              }
+            }' \
+            --jq '.data.repository.release | if . == null then "missing" elif .isDraft then "draft" else "public" end')
+          assets=(src-tauri/target/release/bundle/rpm/*.rpm src-tauri/target/release/bundle/rpm/*.sha256)
+          case "$state" in
+            draft)
+              gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+              ;;
+            missing)
+              gh release create "$RELEASE_TAG" "${assets[@]}" \
+                --verify-tag --draft --title "$RELEASE_TAG" --generate-notes
+              ;;
+            public)
+              echo 'Release is already public; assets will not be replaced.' >&2
+              exit 1
+              ;;
+            *)
+              echo "Unexpected release state: $state" >&2
+              exit 1
+              ;;
+          esac
+          gh release edit "$RELEASE_TAG" --draft=false --latest
