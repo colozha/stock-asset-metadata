@@ -3,6 +3,7 @@
     "targets": ["nsis"],
     "icon": ["icons/icon.ico"],
     "windows": {
+      "bundleVCRuntime": true,
       "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
       "nsis": { "installMode": "currentUser" }
     }

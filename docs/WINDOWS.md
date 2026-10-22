@@ -17,8 +17,9 @@
 3. Setelah checksum cocok, jalankan installer dan ikuti petunjuknya. Aplikasi
    dipasang untuk pengguna saat ini. Installer mengunduh Microsoft WebView2 bila
    belum terpasang, sehingga instalasi pertama dapat memerlukan internet.
-4. Buka **Stock Asset Metadata** dari Start Menu. Node.js, npm, Rust, dan Visual
-   Studio tidak diperlukan untuk menjalankan aplikasi.
+4. Installer menyertakan runtime Visual C++ yang diperlukan. Buka **Stock Asset
+   Metadata** dari Start Menu. Node.js, npm, Rust, dan Visual Studio tidak
+   diperlukan untuk menjalankan aplikasi.
 
 Target installer adalah Windows 10/11 x64; ARM dan Windows 32-bit belum termasuk.
 Installer belum ditandatangani dengan sertifikat penerbit; Windows dapat
@@ -67,19 +68,20 @@ cargo test --manifest-path src-tauri/Cargo.toml --locked
 ## Build otomatis di GitHub
 
 Workflow **Release installers** membangun RPM di Fedora dan installer di runner
-Windows. Job Windows menggunakan script PowerShell yang sama, menjalankan tes
-backend, memasang installer secara senyap, dan memeriksa bahwa aplikasi membuka
-jendela. Job publikasi menunggu kedua platform berhasil dan memverifikasi ulang
-checksum sebelum menerbitkan satu Release dengan empat aset: RPM, installer
-Windows, dan checksum masing-masing.
+Windows. Job Windows menggunakan script PowerShell yang sama, menyertakan runtime
+Visual C++, menjalankan tes backend, memasang installer secara senyap, lalu
+memeriksa runtime dan jendela aplikasi. Job publikasi menunggu kedua platform
+berhasil dan memverifikasi ulang checksum sebelum menerbitkan satu Release dengan
+empat aset: RPM, installer Windows, dan checksum masing-masing.
 
 Samakan versi pada `package.json`, `src-tauri/Cargo.toml`, dan
 `src-tauri/tauri.conf.json`, perbarui kedua lockfile, lalu commit dan push
-perubahan. Buat tag stabil yang cocok, misalnya untuk versi saat ini:
+perubahan. Untuk rilis setelah `0.1.1`, naikkan semua versi ke `0.1.2`, lalu
+buat tag stabil yang cocok:
 
 ```bash
-git tag -a v0.1.1 -m "Release v0.1.1"
-git push origin v0.1.1
+git tag -a v0.1.2 -m "Release v0.1.2"
+git push origin v0.1.2
 ```
 
 Push branch biasa tidak menerbitkan Release. **Actions → Release installers →
