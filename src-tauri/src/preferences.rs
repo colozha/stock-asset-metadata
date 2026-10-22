@@ -54,6 +54,10 @@ pub fn load(path: &Path, documents: &Path) -> AppResult<Preferences> {
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            // Windows also reports NotFound when an ancestor is a file.
+            if path.ancestors().skip(1).any(|parent| parent.is_file()) {
+                return Err("Lokasi pengaturan tidak valid.".into());
+            }
             return Ok(Preferences {
                 language: Language::Id,
                 theme: Theme::Light,
