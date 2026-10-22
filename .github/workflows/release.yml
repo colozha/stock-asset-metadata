@@ -1,19 +1,20 @@
-name: Release RPM
+name: Release installers
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  rpm:
     runs-on: ubuntu-24.04
     container: registry.fedoraproject.org/fedora:44
     timeout-minutes: 60
@@ -21,7 +22,6 @@ jobs:
       run:
         shell: bash --noprofile --norc -euo pipefail {0}
     env:
-      RELEASE_TAG: ${{ github.ref_name }}
       CARGO_BUILD_JOBS: '2'
     steps:
       - name: Install Fedora build dependencies
@@ -37,35 +37,9 @@ jobs:
           persist-credentials: false
 
       - name: Validate release versions
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import re
-          import tomllib
-          from pathlib import Path
-
-          tag = os.environ['RELEASE_TAG']
-          if not re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', tag):
-              raise SystemExit(f'Invalid stable release tag: {tag}')
-          version = tag[1:]
-          versions = {}
-          for filename in ('package.json', 'src-tauri/tauri.conf.json'):
-              versions[filename] = json.loads(Path(filename).read_text())['version']
-          npm_lock = json.loads(Path('package-lock.json').read_text())
-          versions['package-lock.json'] = npm_lock['version']
-          versions['package-lock.json root'] = npm_lock['packages']['']['version']
-          cargo = tomllib.loads(Path('src-tauri/Cargo.toml').read_text())['package']
-          versions['src-tauri/Cargo.toml'] = cargo['version']
-          cargo_lock = tomllib.loads(Path('src-tauri/Cargo.lock').read_text())
-          versions['src-tauri/Cargo.lock'] = next(
-              p['version'] for p in cargo_lock['package'] if p['name'] == cargo['name']
-          )
-          for filename, actual in versions.items():
-              if actual != version:
-                  raise SystemExit(f'{filename}: expected {version}, got {actual}')
-          print(f'All manifest and lockfile versions match {tag}')
-          PY
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+        run: python3 scripts/check-release-version.py
 
       - uses: actions/setup-node@v7
         with:
@@ -92,7 +66,8 @@ jobs:
           packages=(src-tauri/target/release/bundle/rpm/*.rpm)
           test "${#packages[@]}" -eq 1
           package="${packages[0]}"
-          test "$(rpm -qp --queryformat '%{VERSION}' "$package")" = "${RELEASE_TAG#v}"
+          version=$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')
+          test "$(rpm -qp --queryformat '%{VERSION}' "$package")" = "$version"
           test "$(rpm -qp --queryformat '%{ARCH}' "$package")" = x86_64
           rpm -qp --requires "$package" > "$RUNNER_TEMP/rpm-requires.txt"
           grep -Fx ghostscript "$RUNNER_TEMP/rpm-requires.txt"
@@ -107,6 +82,108 @@ jobs:
           sha256sum "$package" > "$package.sha256"
           sha256sum --check "$package.sha256"
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-rpm
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/rpm/*.sha256
+
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Validate release versions
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+        run: python scripts/check-release-version.py
+      - name: Install Rust stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed.' }
+          rustup default stable
+          if ($LASTEXITCODE -ne 0) { throw 'Rust toolchain selection failed.' }
+      - name: Install preview tools for tests
+        run: |
+          choco install ghostscript ffmpeg --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Preview tool installation failed.' }
+          # Chocolatey updates the machine PATH for later processes, not this runner.
+          $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+          $machinePath.Split(';') | Where-Object { $_ } | Add-Content $env:GITHUB_PATH
+      - name: Build and verify Windows installer
+        run: ./scripts/build-windows.ps1
+      - name: Test Windows backend and format roundtrips
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml --locked
+          if ($LASTEXITCODE -ne 0) { throw 'Windows backend tests failed.' }
+      - name: Smoke test installed application
+        run: |
+          $installer = @(Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe -File)
+          if ($installer.Count -ne 1) { throw 'Expected one installer.' }
+          $destination = Join-Path $env:RUNNER_TEMP 'Stock Asset Metadata'
+          $install = Start-Process $installer[0].FullName -ArgumentList '/S', "/D=$destination" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+          $executable = Join-Path $destination 'stock-asset-metadata.exe'
+          if (!(Test-Path $executable)) { throw 'Installed executable is missing.' }
+          $app = Start-Process $executable -PassThru
+          try {
+            Start-Sleep -Seconds 10
+            $app.Refresh()
+            if ($app.HasExited -or $app.MainWindowHandle -eq 0) {
+              throw 'Installed application did not open a window.'
+            }
+          } finally {
+            if (!$app.HasExited) { Stop-Process -Id $app.Id }
+          }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installer
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*.sha256
+
+  publish:
+    needs: [rpm, windows]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euo pipefail {0}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: '*'
+          merge-multiple: true
+          path: release-assets
+      - name: Verify all release assets
+        working-directory: release-assets
+        run: |
+          shopt -s nullglob
+          rpms=(*.rpm)
+          installers=(*-setup.exe)
+          checksums=(*.sha256)
+          test "${#rpms[@]}" -eq 1
+          test "${#installers[@]}" -eq 1
+          test "${#checksums[@]}" -eq 2
+          sha256sum --check -- *.sha256
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -122,7 +199,7 @@ jobs:
               }
             }' \
             --jq '.data.repository.release | if . == null then "missing" elif .isDraft then "draft" else "public" end')
-          assets=(src-tauri/target/release/bundle/rpm/*.rpm src-tauri/target/release/bundle/rpm/*.sha256)
+          assets=(release-assets/*.rpm release-assets/*-setup.exe release-assets/*.sha256)
           case "$state" in
             draft)
               gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber

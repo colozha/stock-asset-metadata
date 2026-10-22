@@ -1,5 +1,30 @@
 # Hasil validasi
 
+## Persiapan installer Windows x64 — 22 Oktober 2026
+
+- Workflow `Release installers` memisahkan build Fedora RPM dan Windows NSIS;
+  publikasi hanya berjalan pada push tag setelah kedua job berhasil. Pengujian
+  manual hanya menghasilkan artifacts. Workflow lulus `actionlint` 1.7.12;
+  script build dan seluruh step PowerShell lulus parser PowerShell 7.6.7.
+  Konfigurasi Windows gabungan lulus JSON Schema Tauri CLI, termasuk ikon ICO.
+- `npm run build`, 22 tes backend tanpa desktop, dan 30 tes backend dengan
+  desktop lulus di Fedora 44. Roundtrip enam format kini juga mencakup direktori
+  Unicode dengan spasi. Path sidebar diuji dengan drive Windows, UNC, extended
+  path, root drive, dan POSIX; nama file POSIX dengan backslash dipertahankan.
+  `npm run bundle -- --ci -- --locked` berhasil membangun ulang RPM 0.1.1-1.
+- Uji terisolasi pemeriksaan empat aset mengonfirmasi checksum yang valid
+  diterima dan file rusak ditolak. Alur publikasi tiruan mencakup rilis baru,
+  melanjutkan draft, menolak penggantian rilis publik, serta kegagalan API/create/
+  upload tanpa publikasi lanjutan. Tidak ada Release yang dibuat oleh pengujian.
+- Perubahan Windows mencakup Explorer, penemuan Ghostscript, file output preview
+  yang tidak dikunci handle sementara, dan sinkronisasi file dengan akses tulis.
+  Sinkronisasi direktori Unix tidak dipanggil di Windows. Test read-only khusus
+  Windows disertakan untuk memastikan copy tidak mengubah atribut sumber.
+- Build, tes backend, instalasi NSIS, dan pembukaan jendela pada runner Windows
+  asli belum dijalankan dari sesi Linux ini. Step verifikasi tersebut tersedia
+  di workflow; pemeriksaan lokal di atas belum membuktikan kompatibilitas Windows
+  native atau seluruh alur IPC. GitHub branch/tag belum dipush oleh perubahan ini.
+
 ## Workflow GitHub Release RPM — 22 Oktober 2026
 
 - Workflow `release.yml` lulus `actionlint` 1.7.12; seluruh step shell lulus

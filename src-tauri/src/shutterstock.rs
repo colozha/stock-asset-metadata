@@ -190,6 +190,7 @@ pub fn export(directory: &Path, category: &str, items: &[CsvItem]) -> AppResult<
             Err(error) => return Err(error.error.to_string()),
         }
     }
+    #[cfg(unix)]
     fs::File::open(directory)
         .and_then(|file| file.sync_all())
         .map_err(|e| format!("Hasil sudah ditulis, tetapi sinkronisasi folder gagal: {e}"))?;

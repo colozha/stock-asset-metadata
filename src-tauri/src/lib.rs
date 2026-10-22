@@ -151,25 +151,35 @@ mod desktop {
     }
 
     #[tauri::command]
-    async fn open_output_directory(
-        app: tauri::AppHandle,
-    ) -> Result<(), super::messages::AppError> {
+    async fn open_output_directory(app: tauri::AppHandle) -> Result<(), super::messages::AppError> {
         let directory = load_app_preferences(app)?.output_dir;
         tauri::async_runtime::spawn_blocking(move || {
             if !directory.is_dir() {
                 return Err("Folder keluaran tidak tersedia.".to_owned());
             }
-            let result = std::process::Command::new("xdg-open")
-                .arg(&directory)
-                .output()
-                .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?;
-            if !result.status.success() {
-                return Err(format!(
-                    "Direktori output tidak dapat dibuka: {}",
-                    String::from_utf8_lossy(&result.stderr).trim()
-                ));
+            #[cfg(target_os = "windows")]
+            {
+                // Explorer may report a nonzero exit code after opening an existing window.
+                std::process::Command::new("explorer.exe")
+                    .arg(&directory)
+                    .spawn()
+                    .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?;
+                Ok(())
             }
-            Ok(())
+            #[cfg(not(target_os = "windows"))]
+            {
+                let result = std::process::Command::new("xdg-open")
+                    .arg(&directory)
+                    .output()
+                    .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?;
+                if !result.status.success() {
+                    return Err(format!(
+                        "Direktori output tidak dapat dibuka: {}",
+                        String::from_utf8_lossy(&result.stderr).trim()
+                    ));
+                }
+                Ok(())
+            }
         })
         .await
         .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?

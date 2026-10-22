@@ -296,7 +296,8 @@ function assetRow(asset: AssetDraft) {
     return row;
 }
 
-const inside = (path: string, root: string) => path.startsWith(`${root.replace(/\/$/, "")}/`);
+const treePath = (path: string) => /^(?:[A-Za-z]:[\\/]|\\\\)/.test(path) ? path.replace(/\\/g, "/") : path;
+const inside = (path: string, root: string) => treePath(path).startsWith(`${treePath(root).replace(/\/$/, "")}/`);
 const groupFormat = (format: string) => format === "jpeg" ? "jpg" : format;
 function owner(path: string) {
   return [...folders.keys()].filter((root) => inside(path, root)).sort((a, b) => b.length - a.length)[0];
@@ -341,14 +342,14 @@ function appendTree(container: HTMLElement, directory: string, items: AssetDraft
   const subfolders = new Map<string, AssetDraft[]>();
   const formats = new Map<string, AssetDraft[]>();
   for (const asset of items) {
-    const relative = directory ? asset.path.slice(directory.replace(/\/$/, "").length + 1) : asset.name;
+    const relative = directory ? treePath(asset.path).slice(treePath(directory).replace(/\/$/, "").length + 1) : asset.name;
     const slash = relative.indexOf("/");
     const groups = slash < 0 ? formats : subfolders;
     const key = slash < 0 ? groupFormat(asset.format) : relative.slice(0, slash);
     groups.set(key, [...(groups.get(key) ?? []), asset]);
   }
   for (const [name, children] of [...subfolders].sort(([a], [b]) => a.localeCompare(b))) {
-    const path = `${directory.replace(/\/$/, "")}/${name}`;
+    const path = `${treePath(directory).replace(/\/$/, "")}/${name}`;
     const node = disclosure(`folder:${path}`, name, children.length, true);
     appendTree(node, path, children);
     container.append(node);
@@ -372,7 +373,7 @@ function renderList() {
     for (const folder of folders.values()) {
       const children = items.filter((asset) => owner(asset.path) === folder.path);
       if (query && !children.length && !folder.error) continue;
-      const name = folder.path.split("/").filter(Boolean).pop() ?? folder.path;
+      const name = treePath(folder.path).split("/").filter(Boolean).pop() ?? folder.path;
       const node = disclosure(`root:${folder.path}`, name, children.length, true);
       const summary = node.querySelector("summary")!;
       summary.title = folder.path;

@@ -274,6 +274,14 @@ pub fn save_one(
         .tempfile_in(parent)
         .map_err(|e| e.to_string())?;
     fs::copy(source, temporary.path()).map_err(|e| e.to_string())?;
+    #[cfg(windows)]
+    {
+        let mut permissions = fs::metadata(temporary.path())
+            .map_err(|e| e.to_string())?
+            .permissions();
+        permissions.set_readonly(false);
+        fs::set_permissions(temporary.path(), permissions).map_err(|e| e.to_string())?;
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -294,7 +302,10 @@ pub fn save_one(
         return Err("Pembacaan ulang metadata tidak sesuai. Sumber tidak diganti.".into());
     }
     // A format handler may replace the temporary inode while updating metadata.
-    fs::File::open(temporary.path())
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(temporary.path())
         .and_then(|file| file.sync_all())
         .map_err(|e| e.to_string())?;
     if stamp(source)? != *expected {
@@ -368,6 +379,7 @@ pub fn save_one(
         }
     };
     // Persist the directory entry as well as the new file contents on Linux.
+    #[cfg(unix)]
     fs::File::open(parent)
         .and_then(|f| f.sync_all())
         .map_err(|e| format!("Hasil sudah ditulis, tetapi sinkronisasi folder gagal: {e}"))?;

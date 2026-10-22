@@ -2,7 +2,7 @@
 
 Aplikasi desktop lokal untuk membaca dan menyunting **title**, **description**, dan
 **keywords** aset microstock. Dibangun dengan Tauri, Rust, dan TypeScript untuk
-**Fedora 44 x86_64**.
+**Fedora 44 x86_64**, dengan target installer **Windows x64**.
 
 ![Editor Stock Asset Metadata dalam bahasa Indonesia dengan tema light](docs/images/app-screenshot.png)
 
@@ -45,6 +45,9 @@ npm run bundle
 
 Hasil RPM berada di `src-tauri/target/release/bundle/rpm/`.
 
+Build installer Windows di PowerShell: `.\scripts\build-windows.ps1`.
+Prasyarat dan petunjuk lengkap tersedia di [panduan Windows](docs/WINDOWS.md).
+
 ## Instalasi RPM
 
 Unduh file `.rpm` dan pasangan `.rpm.sha256` dari
@@ -59,3 +62,10 @@ sudo dnf install './Stock Asset Metadata-0.1.1-1.x86_64.rpm'
 
 DNF memasang dependensi runtime, termasuk Ghostscript dan FFmpeg. RPM belum
 ditandatangani. Setelah instalasi, buka **Stock Asset Metadata** dari menu aplikasi.
+
+## Instalasi Windows
+
+Unduh `*_x64-setup.exe` dan checksum dari GitHub Releases, verifikasi checksum,
+lalu jalankan installer. WebView2 dipasang bila diperlukan; Node.js/Rust tidak
+dibutuhkan. Lihat [petunjuk instalasi dan dependensi preview](docs/WINDOWS.md).
+Push tag versi membangun RPM dan installer Windows pada Release yang sama.

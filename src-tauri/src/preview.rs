@@ -112,9 +112,10 @@ fn render_eps(path: &Path) -> AppResult<Vec<u8>> {
         return Ok(preview);
     }
     check_source_size(path)?;
-    let output = tempfile::NamedTempFile::new().map_err(|e| e.to_string())?;
+    let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let output = directory.path().join("preview.png");
     run_tool(
-        Command::new("gs")
+        Command::new(ghostscript())
             .arg("-q")
             .arg("-dSAFER")
             .arg("-dBATCH")
@@ -127,11 +128,34 @@ fn render_eps(path: &Path) -> AppResult<Vec<u8>> {
             .arg("-r96")
             .arg("-dGraphicsAlphaBits=4")
             .arg("-dTextAlphaBits=4")
-            .arg(format!("-sOutputFile={}", output.path().display()))
+            .arg(format!("-sOutputFile={}", output.display()))
             .arg(path),
-        "Ghostscript tidak tersedia. Pasang paket ghostscript.",
+        "Ghostscript tidak tersedia. Pasang Ghostscript dan mulai ulang aplikasi.",
     )?;
-    read_rendered_png(output.path())
+    read_rendered_png(&output)
+}
+
+fn ghostscript() -> std::path::PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        // Official Windows installers do not always add Ghostscript to PATH.
+        if let Some(program_files) = std::env::var_os("ProgramFiles") {
+            if let Ok(entries) = std::fs::read_dir(Path::new(&program_files).join("gs")) {
+                let mut executables: Vec<_> = entries
+                    .flatten()
+                    .map(|entry| entry.path().join("bin/gswin64c.exe"))
+                    .filter(|path| path.is_file())
+                    .collect();
+                executables.sort();
+                if let Some(path) = executables.pop() {
+                    return path;
+                }
+            }
+        }
+        "gswin64c.exe".into()
+    }
+    #[cfg(not(target_os = "windows"))]
+    "gs".into()
 }
 
 fn embedded_eps(path: &Path) -> AppResult<Vec<u8>> {
@@ -189,7 +213,8 @@ fn render_svg(path: &Path) -> AppResult<Vec<u8>> {
 
 fn render_video(path: &Path) -> AppResult<Vec<u8>> {
     check_source_size(path)?;
-    let output = tempfile::NamedTempFile::new().map_err(|e| e.to_string())?;
+    let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let output = directory.path().join("preview.png");
     run_tool(
         Command::new("ffmpeg")
             .args(["-hide_banner", "-v", "error", "-nostdin"])
@@ -212,10 +237,10 @@ fn render_video(path: &Path) -> AppResult<Vec<u8>> {
                 "png",
                 "-y",
             ])
-            .arg(output.path()),
-        "FFmpeg tidak tersedia. Pasang paket ffmpeg-free.",
+            .arg(&output),
+        "FFmpeg tidak tersedia. Pasang FFmpeg di PATH dan mulai ulang aplikasi.",
     )?;
-    read_rendered_png(output.path())
+    read_rendered_png(&output)
 }
 
 fn check_source_size(path: &Path) -> AppResult<()> {
@@ -234,6 +259,11 @@ fn read_rendered_png(path: &Path) -> AppResult<Vec<u8>> {
 }
 
 fn run_tool(command: &mut Command, missing: &'static str) -> AppResult<()> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
     let mut diagnostics = tempfile::tempfile().map_err(|e| e.to_string())?;
     command
         .stdin(Stdio::null())

@@ -75,6 +75,8 @@ fn mp4_media(bytes: &[u8]) -> Vec<u8> {
 #[test]
 fn all_formats_roundtrip_unicode_and_keep_media() {
     let dir = tempfile::tempdir().unwrap();
+    let assets = dir.path().join("assets 日本 with spaces");
+    fs::create_dir(&assets).unwrap();
     for name in [
         "photo.jpg",
         "image.png",
@@ -83,7 +85,7 @@ fn all_formats_roundtrip_unicode_and_keep_media() {
         "clip.mp4",
         "clip.mov",
     ] {
-        let path = dir.path().join(name);
+        let path = assets.join(name);
         if name.ends_with("jpg") || name.ends_with("png") {
             raster(&path);
         } else {
@@ -243,6 +245,31 @@ fn readonly_sources_allow_copies_and_backups_preserve_permissions() {
         fs::metadata(&source).unwrap().permissions().mode() & 0o777,
         0o600
     );
+}
+
+#[cfg(windows)]
+#[test]
+fn readonly_sources_allow_copies_without_changing_source_attributes() {
+    let dir = tempfile::tempdir().unwrap();
+    let source = dir.path().join("readonly photo.jpg");
+    raster(&source);
+    let original = fs::read(&source).unwrap();
+    let mut permissions = fs::metadata(&source).unwrap().permissions();
+    permissions.set_readonly(true);
+    fs::set_permissions(&source, permissions).unwrap();
+    let before = files::stamp(&source).unwrap();
+    let item = SaveItem {
+        path: source.to_str().unwrap().into(),
+        patch: patch(&value()),
+    };
+    let result = files::save_one(&item, &SaveMode::Copy, Some(dir.path()), &before).unwrap();
+    assert_eq!(metadata::read(Path::new(&result.output_path.unwrap())).unwrap(), value());
+    assert_eq!(fs::read(&source).unwrap(), original);
+    assert!(fs::metadata(&source).unwrap().permissions().readonly());
+    assert!(files::save_one(&item, &SaveMode::ReplaceWithBackup, None, &before).is_err());
+    let mut permissions = fs::metadata(&source).unwrap().permissions();
+    permissions.set_readonly(false);
+    fs::set_permissions(&source, permissions).unwrap();
 }
 
 #[test]
