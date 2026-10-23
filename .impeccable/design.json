@@ -339,6 +339,54 @@
           "oklch(83.6% 0.04291 168.69)",
           "oklch(95% 0.04291 168.69)"
         ]
+      },
+      "relevance-high-bg": {
+        "role": "neutral",
+        "displayName": "High Reference Coverage Surface (Light)"
+      },
+      "relevance-high-ink": {
+        "role": "neutral",
+        "displayName": "High Reference Coverage Ink (Light)"
+      },
+      "relevance-medium-bg": {
+        "role": "neutral",
+        "displayName": "Medium Reference Coverage Surface (Light)"
+      },
+      "relevance-medium-ink": {
+        "role": "neutral",
+        "displayName": "Medium Reference Coverage Ink (Light)"
+      },
+      "relevance-low-bg": {
+        "role": "neutral",
+        "displayName": "Low Reference Coverage Surface (Light)"
+      },
+      "relevance-low-ink": {
+        "role": "neutral",
+        "displayName": "Low Reference Coverage Ink (Light)"
+      },
+      "relevance-high-bg-dark": {
+        "role": "neutral",
+        "displayName": "High Reference Coverage Surface (Dark)"
+      },
+      "relevance-high-ink-dark": {
+        "role": "neutral",
+        "displayName": "High Reference Coverage Ink (Dark)"
+      },
+      "relevance-medium-bg-dark": {
+        "role": "neutral",
+        "displayName": "Medium Reference Coverage Surface (Dark)"
+      },
+      "relevance-medium-ink-dark": {
+        "role": "neutral",
+        "displayName": "Medium Reference Coverage Ink (Dark)"
+      },
+      "relevance-low-bg-dark": {
+        "role": "neutral",
+        "displayName": "Low Reference Coverage Surface (Dark)"
+      },
+      "relevance-low-ink-dark": {
+        "role": "neutral",
+        "displayName": "Low Reference Coverage Ink (Dark)"
       }
     },
     "typographyMeta": {

@@ -1,6 +1,6 @@
 # Perencanaan: Pencarian Referensi dan Keyword Pixabay
 
-Tanggal pemeriksaan sumber: **23 Oktober 2026**. Dokumen ini merencanakan enhancement; dokumen ini sendiri tidak menambahkan implementasi.
+Tanggal pemeriksaan sumber: **23 Oktober 2026**. Dokumen ini menyimpan rancangan enhancement, diperbarui agar key pribadi diisi melalui Settings. Implementasi telah ditambahkan; bukti dan batas verifikasi aktual dicatat di [VALIDATION.md](VALIDATION.md).
 
 ## Ringkasan
 
@@ -16,7 +16,7 @@ Enhancement mengikuti karakter project sebagai aplikasi desktop Tauri lokal: UI 
 - Keyword yang dipilih ditambahkan ke draft aset lokal yang sedang aktif. Urutan keyword yang sudah ada dipertahankan; keyword duplikat dilewati tanpa membatalkan penambahan lain. Perubahan tetap belum tersimpan sampai pengguna menjalankan aksi simpan biasa.
 - Gambar terpilih dapat berasal dari beberapa halaman dalam satu pencarian. Mengirim query baru atau mengganti filter gambar mengosongkan pilihan referensi dan saran lama setelah pencarian baru dijalankan. Status UI menyebutkan bahwa pilihan tersebut direset.
 - Pencarian dan pilihan referensi hanya hidup selama sesi aplikasi. Respons API di-cache lokal selama 24 jam sesuai ketentuan API; cache terpisah dari cache preview aset lokal.
-- API key bersama aplikasi dipilih untuk rancangan ini. Key harus diinjeksi pada build dan tidak boleh disimpan di repository atau ditampilkan di UI. Key yang disertakan di aplikasi desktop **dapat diekstrak**; tidak ada cara menyimpannya sebagai rahasia di binary yang didistribusikan. Jika kuota bersama menjadi sasaran penyalahgunaan, pilihan berikutnya adalah key milik pengguna atau proxy layanan yang dikelola terpisah.
+- API key pribadi diisi pada **Pengaturan → Pixabay**, disimpan melalui satu aksi Simpan pengaturan, dan diletakkan di credential store OS dengan account terpisah dari AI. Tidak ada key bawaan binary, fallback key build, atau kebutuhan rebuild. Input kosong mempertahankan key; penghapusan menunggu Simpan pengaturan; Kembali membatalkan perubahan. Keputusan ini menggantikan rancangan key bersama sebelumnya.
 
 ## Desain Antarmuka
 
@@ -55,7 +55,7 @@ Parameter yang dikirim:
 
 | Parameter | Nilai rancangan |
 | --- | --- |
-| `key` | Key bersama yang diinjeksi pada build; tidak pernah dicatat ke log |
+| `key` | Key pribadi dari credential store OS; tidak pernah dicatat ke log |
 | `q` | Query wajib, trim whitespace, maksimal 100 karakter, di-encode oleh URL builder |
 | `lang` | `en`, agar pencarian dan tag yang disarankan berorientasi keyword microstock bahasa Inggris |
 | `image_type` | `all` secara default; pilihan `photo`, `illustration`, atau `vector` |
@@ -68,7 +68,7 @@ Jangan meminta page di luar jumlah hasil yang dilaporkan API atau batas 500 hasi
 
 ### Kontrak IPC yang Direncanakan
 
-Daftarkan command Tauri `search_pixabay_images` dan tipe hasil terpisah dari metadata aset lokal. Command menerima `query`, `page`, dan `imageType`; `order`, `lang`, `perPage`, dan SafeSearch ditetapkan di backend agar kontrak UI tidak dapat melonggarkan batas tersebut.
+Daftarkan `load_pixabay_settings() → { hasApiKey, keyringError }` dan `save_pixabay_settings(apiKey, clearApiKey)` untuk key pribadi, tanpa mengirim nilai tersimpan ke UI. Daftarkan command Tauri `search_pixabay_images` dan tipe hasil terpisah dari metadata aset lokal. Command menerima `query`, `page`, dan `imageType`; `order`, `lang`, `perPage`, dan SafeSearch ditetapkan di backend agar kontrak UI tidak dapat melonggarkan batas tersebut.
 
 ```ts
 interface PixabayImageHit {
@@ -111,9 +111,9 @@ Backend memetakan string tag Pixabay yang dipisahkan koma ke `tags[]`, mengabaik
 
 ## Key, Privasi, dan Ketentuan Pixabay
 
-Project tidak memiliki server aplikasi. Untuk mengikuti keputusan memakai key bersama, variabel build `PIXABAY_API_KEY` harus diberikan pada lingkungan build Rust desktop/release dan dibaca hanya oleh backend. Build tanpa variabel tersebut menonaktifkan pencarian dengan pesan ID/EN yang jelas. Jangan commit nilai key, menaruhnya di `src/`, mengirimkannya lewat IPC ke WebView, atau mencetak URL request lengkap. API Pixabay menerima `key` sebagai parameter request; karena itu key tetap dapat dilihat pada trafik keluar dan diekstrak dari binary desktop. Build-time secret mencegah nilai masuk ke source control, tetapi **bukan** perlindungan dari pengguna binary.
+Project tidak memiliki server aplikasi. Key pribadi dimasukkan di Settings dan dikirim frontend ke backend hanya untuk penyimpanan eksplisit. Backend menyimpannya di credential store OS (`com.stockassetmetadata.desktop`, account `Pixabay`), membaca key saat pencarian dijalankan, dan hanya mengirim status/error kepada UI. Tidak ada key dalam source, binary, log, JSON pengaturan, atau cache hasil. Menyimpan key tidak memanggil API Pixabay; validitasnya diperiksa pada pencarian pengguna.
 
-Pastikan pipeline RPM dan Windows yang merilis aplikasi mendapat secret tersebut. Bila secret tidak dapat diberikan dengan aman ke pipeline atau pemilik key tidak menerima risiko kuota bersama, hentikan distribusi fitur dengan key bersama dan ubah rancangan ke key per pengguna atau proxy terkelola. Jangan menyamarkan keterbatasan ini sebagai secret yang aman.
+Build dan pipeline RPM/Windows tidak lagi membaca atau mensyaratkan `PIXABAY_API_KEY`. Build lama yang memiliki key bawaan tidak dimigrasikan; pengguna mengisi key sendiri. Credential store yang tidak tersedia dilaporkan sebagai error terstruktur. Penyimpanan tampilan/penyimpanan, AI, dan Pixabay memiliki hasil parsial yang eksplisit; input bagian yang gagal tetap tersedia untuk percobaan ulang.
 
 Pencarian mengirim query dan request network dari perangkat ke Pixabay. Tidak mengirim file, nama/path lokal, preview lokal, maupun metadata pengguna. Sebutkan hal ini di helper text sebelum pencarian pertama atau di informasi fitur. Ketika hasil ditampilkan, selalu cantumkan sumber Pixabay beserta kontributor/tautan halaman bila tersedia. Tautan eksternal harus dibuka dengan alur OS yang sudah digunakan project dan URL-nya divalidasi; jangan mengizinkan navigasi WebView bebas.
 
@@ -125,8 +125,8 @@ Dokumen ini merencanakan, bukan melakukan, perubahan berikut:
 
 1. **Backend provider:** modul Rust terpisah (misalnya `src-tauri/src/pixabay.rs`), tipe request/response, validasi, `reqwest` timeout, cache 24 jam, pemetaan error, dan command Tauri. Daftarkan command di `src-tauri/src/lib.rs`; jangan memakai command inspeksi aset lokal untuk hasil remote.
 2. **UI dan state:** tambah tipe IPC Pixabay di `src/types.ts`; state pencarian/pilihan referensi sementara di `src/main.ts`; toggle panel tengah preview/pencarian; grid, chips ranking, serta layout responsif dan token relevansi di `src/styles.css`.
-3. **Copy dan kebijakan akses:** terjemahan ID/EN di `src/messages.ts` dan `src-tauri/src/messages.rs`; update `img-src` terbatas pada CDN Pixabay di `src-tauri/tauri.conf.json`; injeksi build key di proses packaging tanpa menyimpan secret di repository.
-4. **Dokumentasi setelah implementasi:** perbarui README untuk koneksi internet, fungsi pencarian, atribusi, dan sifat key bersama. Bukti pengujian serta batas yang belum diverifikasi dicatat di `docs/VALIDATION.md`.
+3. **Copy dan kebijakan akses:** terjemahan ID/EN di `src/messages.ts` dan `src-tauri/src/messages.rs`; update `img-src` terbatas pada CDN Pixabay di `src-tauri/tauri.conf.json`; input key pribadi di Settings dan penyimpanan credential OS tanpa key di repository atau binary.
+4. **Dokumentasi setelah implementasi:** perbarui README untuk koneksi internet, fungsi pencarian, atribusi, dan key pribadi melalui Settings. Bukti pengujian serta batas yang belum diverifikasi dicatat di `docs/VALIDATION.md`.
 
 Tidak ada perubahan metadata yang disimpan otomatis. Pemilihan lokal untuk batch save tetap terpisah dari referensi Pixabay; perintah tambahkan hanya mengubah draft aset aktif. Aksi Generate Keywords AI yang ada tetap berbeda: bila dijalankan setelah penambahan tag Pixabay, perilaku generator yang mengganti daftar keyword mengikuti semantik saat ini dan perlu dinyatakan di UI/help agar tidak mengejutkan.
 
@@ -137,7 +137,7 @@ Tidak ada perubahan metadata yang disimpan otomatis. Pemilihan lokal untuk batch
 - Unit test parsing tag kosong, spasi, kapitalisasi, tag duplikat dalam satu gambar, dan Unicode; ranking frekuensi, pemecah seri, serta batas warna.
 - Mock HTTP lokal menguji query encode, filter yang diizinkan, mapping `hits`, pagination maksimum, timeout, HTTP 429, error HTTP lain, JSON rusak, dan URL/host gambar yang ditolak.
 - Tes cache memastikan key berbeda untuk query/filter/page berbeda; cache fresh dipakai ulang hingga 24 jam; expired dibuang/diganti; file cache tidak memuat API key dan tidak menyimpan bytes gambar.
-- Build tanpa `PIXABAY_API_KEY` melaporkan status unavailable dengan error terstruktur, bukan panic atau request kosong.
+- Tanpa key tersimpan, pencarian dinonaktifkan dengan petunjuk Settings dan error terstruktur. Simpan/ganti/hapus/batal serta persistensi restart diverifikasi melalui credential store OS terisolasi.
 
 **Renderer dan Tauri**
 
@@ -146,13 +146,13 @@ Tidak ada perubahan metadata yang disimpan otomatis. Pemilihan lokal untuk batch
 - Keluar dari mode riset mengembalikan preview lokal; draft, additional context, dan keyword order tidak berubah. Ganti aset aktif saat mode riset terbuka; tombol tambah menunjukkan target yang benar.
 - Uji hasil kosong, preview eksternal gagal, loading, offline, 429, key tidak tersedia, dan error membuka sumber. Uji tidak mengirim path/isi file lokal dan tidak menampilkan key pada log/error.
 - Uji keyboard, pembaca layar/nama kontrol, fokus, teks status, grid pada 1440×900 dan minimum native 1024×700, serta keempat kombinasi ID/EN × light/dark tanpa overflow.
-- UI memakai IPC tiruan untuk variasi/error; paling sedikit satu verifikasi Tauri native menggunakan HTTP mock lokal untuk membuktikan command Rust, permission, cache, dan CSP thumbnail. Pencarian live ke Pixabay hanya smoke check manual dengan key release yang disediakan, tidak menjadi tes otomatis.
+- UI memakai IPC tiruan untuk variasi/error; paling sedikit satu verifikasi Tauri native menggunakan HTTP mock lokal untuk membuktikan command Rust, permission, cache, dan CSP thumbnail. Pencarian live ke Pixabay hanya smoke check manual dengan key pribadi yang disediakan, tidak menjadi tes otomatis.
 
 Perintah pemeriksaan yang tetap relevan sesudah implementasi mengikuti `AGENTS.md`: `npm run check`, `npm run build`, `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features`, dan verifikasi IPC Tauri native. Tidak ada perintah tersebut yang dijalankan saat membuat dokumen ini.
 
 ## Risiko dan Kriteria Selesai
 
-Risiko utama adalah key bersama di binary desktop dapat diekstrak dan kuota 100 request/60 detik berlaku per key, sehingga aktivitas seluruh pengguna berbagi batas. Cache 24 jam dan pencarian eksplisit menurunkan request berulang tetapi tidak mengamankan key. Cache/query juga menyimpan istilah pencarian lokal selama masa cache. Gambar/tag/URL provider dapat berubah, dihapus, tidak tersedia, atau lisensinya memiliki batas dan hak pihak ketiga yang tidak diverifikasi aplikasi.
+Key pribadi memerlukan credential store OS yang berfungsi dan tetap mengikuti kuota API Pixabay. Cache/query menyimpan istilah pencarian lokal selama masa cache. Gambar/tag/URL provider dapat berubah, dihapus, tidak tersedia, atau lisensinya memiliki batas dan hak pihak ketiga yang tidak diverifikasi aplikasi.
 
 Enhancement dianggap siap untuk rilis setelah pencarian manual berhasil dengan batas API, key tidak bocor ke UI/log, attribution tampil, tag ranking dapat dijelaskan lewat hitungan referensi, penambahan hanya mengubah draft aktif, UI konsisten di dua tema/bahasa dan ukuran minimum, kegagalan jaringan terlapor dengan benar, serta pemeriksaan native dan build release tercatat. Klaim ranking harus tetap disebut sebagai **frekuensi tag dalam gambar Pixabay yang dipilih**, bukan popularitas keyword seluruh pasar microstock.
 

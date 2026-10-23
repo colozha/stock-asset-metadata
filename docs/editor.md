@@ -20,3 +20,48 @@ Use locally embedded official Lucide SVG paths with the established icon sizes a
 Both desktop side panels have 7px vertical separators with a visible grip, purple hover/focus/drag state, and `col-resize` cursor. Pointer capture keeps dragging reliable outside the separator. Keyboard arrows adjust widths by 10px (Shift: 50px); Home/End select limits and double-click resets defaults. Widths persist in localStorage; minimums are 200px tree, 300px metadata, and 240px preview, clamped when the window shrinks. The browser fallback below 900px hides separators and keeps metadata below the preview.
 
 Every application message has ID/EN entries in `src/messages.ts`; static copy uses `data-i18n`, dynamic copy uses `t()`, and application-owned IPC errors carry `{ key, params, detail }` for `errorText()`. OS/library/provider diagnostics remain literal. Metadata drafts, context, filenames, paths, provider/model identifiers, and generated English metadata do not change with the UI language. Light preserves the original palette; dark uses root CSS tokens and `color-scheme`. Legacy preferences default to Indonesian/light.
+
+## Pixabay keyword research
+
+Mode: Operate, extending the incumbent editor. The Keywords action switches only
+the central panel between local preview and reference search. Query/filter edits
+wait for Enter/Search; search controls and pagination remain outside the scrolling
+grid. Cards use small, uncropped thumbnails, native checkboxes, contributor text,
+and a separate source link. The grid collapses to one column at the central
+panel's 240px minimum. The side-panel resize contract remains unchanged.
+
+Selected images persist across pages and local-asset changes. Suggestions start
+unchecked; labels combine coverage counts, high/medium/low text, and theme tokens.
+The add action identifies the active target and appends to its draft. Existing
+keyword text/order, metadata fields, and additional context are preserved. A new
+submitted query/filter resets references; Back to preview clears the research
+session. Settings and Output suspend it; Output offers no add action. Language
+and theme changes preserve references and retranslate status. Delayed responses
+cannot replace a newer query or reopen a closed session.
+
+Keep reference cards square and flat, with the existing thin borders and purple
+selected/focus treatments. Search, pagination, and adding tags use secondary
+controls; the coral action remains Save metadata. Attribution stays visible in
+the panel footer, and each card's source link is separate from its checkbox.
+Thumbnail failures retain the reference label and source link.
+
+Coverage labels use the approved light/dark `relevance-high-*`,
+`relevance-medium-*`, and `relevance-low-*` background/ink pairs only on the count
+badge. High means at least 75% of selected unique images, medium 40% to below
+75%, and low below 40%; every label includes the count/total and localized level.
+A single selected image gives each of its tags 1/1 coverage. Suggestions rank by
+frequency with stable first-seen ties; this describes consistency across chosen
+references. Reference selection, suggestion selection, and the local save batch
+remain separate controls. Adding selected suggestions skips duplicates, reports
+the result, and requires the existing Save metadata action to write the draft.
+
+The Pixabay Settings section follows storage and reuses the AI password-row,
+show/hide and pending-delete patterns. One Save settings action commits all
+sections and its status remains visible beside that action; blank input preserves the saved key, Back cancels replacement/deletion,
+and successful saving clears and masks the input. The stored key is never read
+back to the renderer. App preferences, AI and Pixabay report partial save results
+independently while retaining failed inputs. Saving does not make a Pixabay HTTP
+request. Missing credentials expose Set Pixabay key, opening Settings with focus
+on its input. Deleting the key disables new searches but keeps existing reference
+selection, suggestions and metadata drafts. Personal credentials use the OS store;
+no build-time key or shared-key fallback is supported.

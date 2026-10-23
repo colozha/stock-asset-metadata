@@ -1,5 +1,131 @@
 # Hasil validasi
 
+
+
+## API key Pixabay melalui Settings — 23 Oktober 2026
+
+Keputusan key bersama saat build pada catatan riset sebelumnya **digantikan**:
+Pixabay kini memakai key pribadi dari Settings dan credential store OS, tanpa
+key bawaan atau fallback build. Tidak ada migrasi key binary lama. Pipeline
+RPM/Windows tidak lagi mensyaratkan secret Pixabay.
+
+Pemeriksaan yang **lulus**:
+
+- `npm run check` dan `npm run build`.
+- `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features`:
+  **24 tes** (14 unit dan 10 integrasi). `cargo test --manifest-path
+  src-tauri/Cargo.toml --lib`: **24 tes**, termasuk penolakan penggantian dan
+  penghapusan key sekaligus sebelum mengakses credential store.
+- Renderer Chromium dengan mock IPC resmi Tauri memeriksa input password,
+  tampilkan/sembunyikan, status tersimpan, input kosong mempertahankan key,
+  penggantian, penghapusan tertunda, pembatalan penghapusan, dan Kembali yang
+  membuang input. Menyimpan tidak melakukan pencarian otomatis.
+- Tiga arah simpan parsial: AI gagal/Pixabay berhasil, Pixabay gagal/AI berhasil,
+  serta preferensi aplikasi gagal/Pixabay berhasil. Status menyebut bagian
+  berhasil/gagal; input bagian gagal dipertahankan. Status berada di footer
+  sticky agar terlihat dari bagian Pixabay maupun bagian lain.
+- Pencarian langsung aktif setelah simpan, tanpa restart; draft keyword dan
+  konteks tambahan tetap utuh. Perubahan/penghapusan key tidak membuang referensi
+  terpilih; setelah key dihapus, pencarian baru nonaktif dan keyword dari
+  referensi yang tersedia masih dapat ditambahkan ke draft.
+- Tauri native Fedora 44 memakai IPC Rust asli, **D-Bus/Secret Service baru dan
+  XDG config/data/cache terisolasi** di `/tmp/pixabay-settings-qa/native/`.
+  `gnome-keyring-daemon` memakai keyring uji terpisah. Key dummy disimpan,
+  diganti, dipertahankan untuk input kosong, dibatalkan penghapusannya, dan
+  akhirnya dihapus. Credential milik pengguna tidak dibaca atau diubah.
+- Aplikasi native ditutup dan dibuka ulang pada bus uji yang sama: status key
+  tetap tersedia, sementara input password kosong. Dua query HTTP mock memakai
+  key dummy berbeda yang diwajibkan server, membuktikan pencarian membaca key
+  terbaru. Menyimpan key tidak memanggil server. Respons IPC load/save hanya
+  memuat status/error; file JSON konfigurasi dan cache tidak memuat key dummy.
+- ID/EN × light/dark pada **1440×900 dan 1024×700**: section Pixabay memakai
+  komponen/token Settings yang ada, tanpa overflow horizontal atau error
+  runtime. Aksi Atur key Pixabay membuka Settings dengan fokus pada input.
+  Capture native menonaktifkan transisi sementara agar tidak merekam state
+  peralihan kontrol yang dinonaktifkan saat simpan.
+- Reviewer Impeccable memeriksa 16 capture native/renderer dan memberi
+  disposition **ship pada cakupan Settings**, tanpa temuan material.
+
+Browser plugin tidak tersedia; renderer menggunakan Playwright yang sudah
+tersedia di cache. Bukti sementara: `/tmp/pixabay-settings-qa/settings-*.png`,
+`native-settings-*.png`, `renderer-results.json`, dan `native-results.json`.
+Skrip sementara berada di `/tmp/pixabay-settings-renderer.cjs` dan
+`/tmp/pixabay-settings-native.py`. Detektor desain dijalankan sekali; hasilnya
+hanya temuan font lama serta false positive pembacaan statis index/preview,
+tanpa temuan baru pada kontrol Pixabay.
+
+**Batas bukti:** keyring tidak tersedia dan kegagalan tiap bagian diuji melalui
+mock renderer; persistence credential memakai Secret Service native sungguhan.
+Belum ada pencarian API Pixabay dengan key nyata, uji pembaca layar, build
+Windows, atau rebuild/instalasi RPM untuk perubahan Settings ini. Paket yang
+terpasang masih implementasi sebelumnya yang memakai key build.
+
+## Riset keyword Pixabay — 23 Oktober 2026
+
+Implementasi menambahkan pencarian gambar Pixabay melalui Rust, cache respons
+24 jam terpisah, pilihan referensi lintas halaman, ranking frekuensi tag, dan
+penambahan pilihan ke draft aset aktif. Tidak ada perubahan alur penulisan XMP.
+
+Pemeriksaan yang **lulus**:
+
+- `npm run check` dan `npm run build` (pemeriksaan tipe serta build Vite).
+- `node scripts/test-pixabay.mjs`: normalisasi Unicode/whitespace, tag/gambar
+  duplikat, ranking stabil berdasarkan posisi hasil API, ambang 75%/40%, input
+  kosong, penambahan sesuai ranking, dan pelestarian teks/urutan draft lama.
+- `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features`:
+  **24 tes** (14 unit, 10 integrasi roundtrip). Tes bahasa memeriksa kamus error
+  backend dan kesamaan parameter ID/EN.
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: **23 tes**, termasuk
+  HTTP mock lokal untuk parameter/encoding, filter, cache tanpa key, pagination,
+  429/reset, HTTP 500/redaksi key, JSON rusak, batas ukuran, timeout, dan redirect.
+  Unit cache mencakup entry fresh, batas kedaluwarsa tepat 24 jam, file rusak,
+  perbedaan query/filter/halaman, serta lokasi cache yang tidak dapat digunakan.
+- Renderer Chromium dengan mock IPC resmi Tauri: saran awal tanpa centang,
+  referensi lintas halaman, duplikat dilewati, tidak ada panggilan save saat
+  menambah keyword, pergantian target, Output hanya baca, Settings/sesi yang
+  bertahan, reset query/filter, input tidak valid, hasil kosong, offline, 429,
+  respons lama diabaikan, serta penutupan mode saat request masih berlangsung.
+  Tidak ditemukan error runtime atau overflow horizontal.
+- Keyboard renderer: Enter membuka dan mencari; Space memilih gambar/saran;
+  separator keyboard mempersempit panel tengah menjadi **240 px**, grid menjadi
+  satu kolom tanpa overflow; kembali memulihkan fokus. Thumbnail gagal dan
+  build tanpa key tetap memiliki status dan kontrol yang benar.
+- Native Fedora 44 melalui `tauri-driver`/WebKitWebDriver memakai IPC Rust asli,
+  konfigurasi/data/cache XDG terisolasi, fixture SVG sementara, key dummy, dan
+  HTTP mock loopback. Pencarian/pagination, penambahan/deduplikasi draft, cache
+  hit tanpa HTTP tambahan, error filter/halaman, 429/503, serta hasil kosong
+  berhasil. Cache tidak memuat key dummy. Thumbnail CDN Pixabay sungguhan
+  tampil, sedangkan host gambar lain diblokir CSP. Pembuka OS diuji dengan
+  pengganti `xdg-open` yang mencatat argumen; URL di luar Pixabay ditolak.
+- Screenshot renderer dan native mencakup **ID/EN × light/dark** pada
+  **1440×900 dan 1024×700**. Inspeksi gabungan diikuti satu batch perbaikan
+  (thumbnail dibatasi dalam kartu, status penambahan dibersihkan saat target
+  berubah), lalu konfirmasi. Reviewer Impeccable memberi disposition **ship
+  pada cakupan yang diperiksa**, tanpa temuan material.
+- `npm run bundle` menghasilkan RPM **0.1.2-1 x86_64**, dibangun tanpa key.
+  Binary release dengan frontend terbundel dari `tauri://localhost` menampilkan
+  pencarian nonaktif dan error IPC terstruktur untuk key tidak tersedia.
+  Binary tidak memuat key dummy atau endpoint HTTP mock dari build debug.
+
+Browser plugin tidak tersedia; renderer memakai Playwright yang sudah ada di
+cache, tanpa dependency project baru. Skrip/screenshot sementara berada di
+`/tmp/pixabay-qa/` (`renderer-*.png`, `native-*.png`, serta hasil JSON). Dataset
+API native bersifat sintetis dan diberi label, dengan thumbnail bunga publik
+untuk membuktikan pemuatan CDN; ini bukan bukti hasil pencarian apple live.
+
+Override `PIXABAY_TEST_API_URL` hanya dikompilasi pada debug dan dibatasi ke
+HTTP loopback. Release selalu memakai endpoint HTTPS Pixabay. Workflow release
+RPM/Windows kini mensyaratkan secret `PIXABAY_API_KEY`; nilai secret tidak
+tersedia/disetel dalam verifikasi ini. Paket lokal tanpa key tetap dapat dipakai
+untuk metadata lokal dan harus dibangun ulang dengan key untuk pencarian live.
+
+**Batas bukti:** belum ada smoke check API Pixabay dengan key nyata, packaging
+Windows untuk perubahan ini, pengujian pembaca layar, atau instalasi RPM ke
+sistem pengguna. Key bersama tetap dapat diekstrak dari binary dan berbagi kuota.
+Detektor desain dijalankan sekali; temuan font lama serta pembacaan statis
+hierarki/warna/preview tanpa `src` berasal dari pola editor yang sudah ada dan
+tidak dijadikan alasan mengubah desain di luar fitur ini.
+
 ## Verifikasi installer Windows x64 — 22 Oktober 2026
 
 - [Run GitHub Actions 39783833052](https://github.com/colozha/stock-asset-metadata/actions/runs/39783833052)

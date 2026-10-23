@@ -122,3 +122,27 @@ export interface Inspection {
   folders: FolderStatus[];
   files: string[];
 }
+
+export type PixabayImageType = "all" | "photo" | "illustration" | "vector";
+export interface PixabayImageHit {
+  id: number;
+  pageUrl: string;
+  previewUrl: string;
+  tags: string[];
+  contributor: string;
+  views: number;
+  downloads: number;
+}
+export interface PixabaySearchPage {
+  query: string;
+  page: number;
+  perPage: number;
+  totalHits: number;
+  hits: PixabayImageHit[];
+  cachedAt: number;
+}
+
+export interface PixabaySettings {
+  hasApiKey: boolean;
+  keyringError: AppError | null;
+}

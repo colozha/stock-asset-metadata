@@ -29,6 +29,8 @@ Metadata editing uses local files. Import files or recursively scan folders, ski
 - Show lightweight image previews, embedded EPS TIFF previews, and video file information.
 - SVG support is UTF-8. Unsupported or malformed files report errors without modifying sources.
 - Offer optional Shutterstock CSV export before saving changed MP4/MOV videos, with one category per batch. Write one CSV per successful video output folder using final filenames and saved metadata; preserve existing CSVs with numbered suffixes. Other agency exports and video playback remain outside this version.
+- Explicit Pixabay image search replaces the central preview during keyword research. Selected references persist across result pages; frequency-ranked tags are individually selected and appended to the current editable asset draft without reordering existing keywords. Output remains read-only.
+- Pixabay requests send only query/filter/page data through Rust. Responses are cached separately for 24 hours, thumbnails are temporary, and source attribution links open through the OS. Each user supplies a personal Pixabay API key through Settings, committed by the shared Save settings action and stored in the OS credential store under a separate account. Missing keys disable new searches; builds do not embed Pixabay keys.
 - Local readback does not establish agency ingestion or an Illustrator open/save roundtrip.
 - Provider endpoint, model, active provider, and generator preferences are stored locally. API keys use the operating system credential store. Explicit AI requests send the prompt, optional per-asset context, and, for supported raster vision models, an image preview to the configured provider.
 

@@ -18,6 +18,10 @@ Frontend terdiri dari `main.ts`, `types.ts`, dan `styles.css`. Backend dipisahka
 | Command | Kontrak |
 | --- | --- |
 | `inspect_assets(paths, refresh=false)` | `{ assets, folders, files }`: aset unik, root folder/status pemindaian, dan path file impor langsung; pemindaian rekursif tanpa symbolic link. Snapshot diperbarui hanya ketika muat ulang diminta. |
+| `load_pixabay_settings()` | `{ hasApiKey, keyringError }` dari credential store OS, tanpa mengirim nilai key ke UI. |
+| `save_pixabay_settings(apiKey, clearApiKey)` | Simpan/ganti/hapus key pribadi; input kosong mempertahankan key. |
+| `search_pixabay_images(query, page, imageType)` | Hasil gambar, tag, pagination, dan `cachedAt` Unix milidetik; cache 24 jam dan maksimal 500 hasil. |
+| `open_pixabay_page(url)` | Validasi HTTPS/host sumber, lalu buka melalui OS. |
 | `read_preview(path)` | Byte gambar untuk file yang sudah diimpor. |
 | `get_preview_cache_size()` | Total byte file cache preview. |
 | `clear_preview_cache()` | Hapus cache preview dan kembalikan jumlah byte yang dihapus. |
@@ -43,6 +47,8 @@ Patch yang tidak menyertakan field mempertahankan field tersebut. String kosong 
 6. **Selesai — panel dan tampilan:** resize panel dengan pointer/keyboard dan persistensi, satu tombol simpan pengaturan, bahasa ID/EN untuk copy aplikasi dan error IPC terstruktur, tema light/dark, serta migrasi preferensi lama.
 
 7. **Selesai — preview dan cache:** cache PNG yang memakai versi file dan renderer, rasterisasi SVG, fallback Ghostscript untuk EPS, poster frame FFmpeg untuk MP4/MOV, preview vision AI dari cache yang sama, serta ukuran dan tombol hapus cache terpisah di bagian bawah Settings.
+
+8. **Selesai — implementasi riset Pixabay:** provider gambar Rust, cache terpisah 24 jam, key pribadi dari Settings, validasi URL/HTTP, grid/pagination, pilihan referensi lintas halaman, ranking frekuensi, dan penambahan keyword ke draft aktif. Pengaturan bahasa/tema dan Output mempertahankan sesi; tutup mode menghapusnya. Status verifikasi serta batas rilis berada di catatan validasi.
 
 Bukti pemeriksaan serta batas pengujian dicatat di [docs/VALIDATION.md](docs/VALIDATION.md). Artefak rilis tersedia di `src-tauri/target/release/`.
 

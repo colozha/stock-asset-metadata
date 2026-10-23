@@ -1,6 +1,8 @@
 pub mod files;
 pub mod messages;
 pub mod metadata;
+#[cfg(any(feature = "desktop", test))]
+pub mod pixabay;
 pub mod preferences;
 pub mod preview;
 pub mod shutterstock;
@@ -68,9 +70,9 @@ mod desktop {
         let mut snapshots = state.snapshots.lock().map_err(|e| e.to_string())?;
         for (path, stamp) in stamps {
             if refresh.unwrap_or(false)
-                && !preserve_paths.as_ref().is_some_and(|paths| {
-                    paths.iter().any(|saved| Path::new(saved) == path)
-                })
+                && !preserve_paths
+                    .as_ref()
+                    .is_some_and(|paths| paths.iter().any(|saved| Path::new(saved) == path))
             {
                 snapshots.insert(path, stamp);
             } else {
@@ -106,8 +108,10 @@ mod desktop {
         .await
         .map_err(|error| error.to_string())?;
         // Output previews never renew conflict snapshots for editable sources.
-        *state.output_previews.lock().map_err(|error| error.to_string())? =
-            stamps.into_keys().collect();
+        *state
+            .output_previews
+            .lock()
+            .map_err(|error| error.to_string())? = stamps.into_keys().collect();
         Ok(report)
     }
 
@@ -184,6 +188,57 @@ mod desktop {
         .await
         .map_err(|e| format!("Direktori output tidak dapat dibuka: {e}"))?
         .map_err(Into::into)
+    }
+
+    #[tauri::command]
+    async fn load_pixabay_settings(
+    ) -> Result<super::pixabay::SettingsView, super::messages::AppError> {
+        tauri::async_runtime::spawn_blocking(super::pixabay::load_settings)
+            .await
+            .map_err(|_| super::messages::AppError::from("Pengaturan Pixabay tidak dapat dimuat."))
+    }
+
+    #[tauri::command]
+    async fn save_pixabay_settings(
+        api_key: Option<String>,
+        clear_api_key: bool,
+    ) -> Result<super::pixabay::SettingsView, super::messages::AppError> {
+        tauri::async_runtime::spawn_blocking(move || {
+            super::pixabay::save_settings(api_key, clear_api_key)
+        })
+        .await
+        .map_err(|_| super::messages::AppError::from("Pengaturan Pixabay tidak dapat disimpan."))?
+    }
+
+    #[tauri::command]
+    async fn search_pixabay_images(
+        app: tauri::AppHandle,
+        query: String,
+        page: u32,
+        image_type: String,
+    ) -> Result<super::pixabay::SearchPage, super::messages::AppError> {
+        let kind = super::pixabay::ImageType::parse(&image_type)?;
+        let cache = app
+            .path()
+            .app_cache_dir()
+            .map_err(|e| super::messages::AppError {
+                key: Some("Cache Pixabay tidak dapat digunakan: {0}".into()),
+                params: vec![e.to_string()],
+                detail: None,
+            })?
+            .join("pixabay-search");
+        super::pixabay::search(&cache, &query, page, kind).await
+    }
+
+    #[tauri::command]
+    async fn open_pixabay_page(url: String) -> Result<(), super::messages::AppError> {
+        tauri::async_runtime::spawn_blocking(move || super::pixabay::open_page(&url))
+            .await
+            .map_err(|e| super::messages::AppError {
+                key: Some("Halaman Pixabay tidak dapat dibuka: {0}".into()),
+                params: vec![e.to_string()],
+                detail: None,
+            })?
     }
 
     #[tauri::command]
@@ -459,6 +514,10 @@ mod desktop {
             .manage(AppState::default())
             .plugin(tauri_plugin_dialog::init())
             .invoke_handler(tauri::generate_handler![
+                load_pixabay_settings,
+                save_pixabay_settings,
+                search_pixabay_images,
+                open_pixabay_page,
                 inspect_assets,
                 inspect_output_assets,
                 load_app_preferences,

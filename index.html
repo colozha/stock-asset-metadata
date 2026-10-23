@@ -172,6 +172,7 @@
 
         <div id="resize-assets" class="panel-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="asset-panel" aria-label="Ubah lebar daftar aset" title="Seret untuk mengubah lebar. Klik ganda untuk mengatur ulang." data-i18n-aria-label="Ubah lebar daftar aset" data-i18n-title="Seret untuk mengubah lebar. Klik ganda untuk mengatur ulang."></div>
         <section class="preview-panel" aria-label="Preview aset" data-i18n-aria-label="Preview aset">
+          <div id="local-preview" class="local-preview">
           <div class="preview-heading">
             <div>
               <strong id="preview-name"><span data-i18n="Ruang preview">Ruang preview</span></strong
@@ -200,6 +201,40 @@
               ><span data-i18n="Aset tetap berada di perangkat Anda.">Aset tetap berada di perangkat Anda.</span></span
             ><span id="preview-state"><span data-i18n="Menunggu aset">Menunggu aset</span></span>
           </div>
+          </div>
+          <section id="pixabay-panel" class="pixabay-panel" aria-labelledby="pixabay-title" hidden>
+            <div class="pixabay-heading">
+              <h2 id="pixabay-title" data-i18n="Referensi Pixabay">Referensi Pixabay</h2>
+              <button id="pixabay-close" type="button" data-i18n="Kembali ke preview">Kembali ke preview</button>
+            </div>
+            <form id="pixabay-form" class="pixabay-form">
+              <label for="pixabay-query" data-i18n="Cari gambar referensi">Cari gambar referensi</label>
+              <div class="pixabay-query-row">
+                <input id="pixabay-query" type="search" placeholder="Contoh: green apple" data-i18n-placeholder="Contoh: green apple" autocomplete="off" aria-describedby="pixabay-privacy" />
+                <button id="pixabay-search" type="submit" disabled data-i18n="Cari">Cari</button>
+              </div>
+              <fieldset class="pixabay-filters">
+                <legend data-i18n="Tipe gambar">Tipe gambar</legend>
+                <label><input type="radio" name="pixabay-type" value="all" checked /><span data-i18n="Semua gambar">Semua gambar</span></label>
+                <label><input type="radio" name="pixabay-type" value="photo" /><span data-i18n="Foto">Foto</span></label>
+                <label><input type="radio" name="pixabay-type" value="illustration" /><span data-i18n="Ilustrasi">Ilustrasi</span></label>
+                <label><input type="radio" name="pixabay-type" value="vector" /><span data-i18n="Vektor">Vektor</span></label>
+              </fieldset>
+              <p id="pixabay-privacy" class="field-hint" data-i18n="Pencarian mengirim teks query ke Pixabay. File, path, dan metadata lokal tidak dikirim.">Pencarian mengirim teks query ke Pixabay. File, path, dan metadata lokal tidak dikirim.</p>
+            </form>
+            <p id="pixabay-status" class="pixabay-status" role="status" aria-live="polite"></p>
+            <div id="pixabay-grid" class="pixabay-grid" aria-label="Hasil pencarian Pixabay" data-i18n-aria-label="Hasil pencarian Pixabay"></div>
+            <div class="pixabay-footer">
+              <span id="pixabay-selected"></span>
+              <nav class="pixabay-pagination" aria-label="Halaman hasil Pixabay" data-i18n-aria-label="Halaman hasil Pixabay">
+                <button id="pixabay-prev" type="button" data-i18n="Sebelumnya">Sebelumnya</button>
+                <span id="pixabay-page"></span>
+                <button id="pixabay-next" type="button" data-i18n="Berikutnya">Berikutnya</button>
+              </nav>
+              <a class="pixabay-source" href="https://pixabay.com/" data-i18n="Sumber gambar: Pixabay">Sumber gambar: Pixabay</a>
+            </div>
+          </section>
+
         </section>
 
         <div id="resize-metadata" class="panel-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="metadata-panel" aria-label="Ubah lebar panel metadata" title="Seret untuk mengubah lebar. Klik ganda untuk mengatur ulang." data-i18n-aria-label="Ubah lebar panel metadata" data-i18n-title="Seret untuk mengubah lebar. Klik ganda untuk mengatur ulang."></div>
@@ -256,6 +291,7 @@
                   <svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg><span data-i18n="Generate Keywords">Generate Keywords</span></button>
               </div>
               <p id="ai-status" class="ai-status" role="status" aria-live="polite"><span data-i18n="Atur provider lewat Settings untuk mulai.">Atur provider lewat Settings untuk mulai.</span></p>
+              <p class="field-hint" data-i18n="Generate Keywords mengganti daftar keyword draft, termasuk keyword dari Pixabay.">Generate Keywords mengganti daftar keyword draft, termasuk keyword dari Pixabay.</p>
               <p class="ai-privacy-hint"><span data-i18n="Saat generate, prompt dan preview raster yang didukung dikirim ke provider terpilih.">Saat generate, prompt dan preview raster yang didukung dikirim ke provider terpilih.</span></p>
             </section>
             <form id="metadata-form">
@@ -310,6 +346,19 @@
                   class="keyword-list"
                   aria-label="Urutan keywords"
                  data-i18n-aria-label="Urutan keywords"></ol>
+                <div id="pixabay-tools" class="pixabay-tools">
+                  <button id="pixabay-open" type="button" disabled data-i18n="Cari referensi Pixabay">Cari referensi Pixabay</button>
+                  <p id="pixabay-availability" class="field-hint" role="status"></p>
+                  <button id="pixabay-configure" type="button" data-i18n="Atur key Pixabay">Atur key Pixabay</button>
+                  <section id="pixabay-suggestions" aria-labelledby="pixabay-suggestions-title" hidden>
+                    <h3 id="pixabay-suggestions-title" data-i18n="Saran dari gambar terpilih">Saran dari gambar terpilih</h3>
+                    <p class="field-hint" data-i18n="Hitungan menunjukkan konsistensi tag antar referensi, bukan popularitas keyword. Untuk satu gambar, semua tag memiliki cakupan 1/1.">Hitungan menunjukkan konsistensi tag antar referensi, bukan popularitas keyword. Untuk satu gambar, semua tag memiliki cakupan 1/1.</p>
+                    <div id="pixabay-tags" class="pixabay-tags"></div>
+                    <p id="pixabay-target" class="field-hint"></p>
+                    <button id="pixabay-add" type="button" data-i18n="Tambahkan pilihan ke draft">Tambahkan pilihan ke draft</button>
+                    <p id="pixabay-add-status" class="field-hint" role="status" aria-live="polite"></p>
+                  </section>
+                </div>
                 <button
                   id="apply-batch"
                   type="button"
@@ -340,7 +389,7 @@
             </button>
             <div>
               <h1 id="settings-title"><span data-i18n="Pengaturan">Pengaturan</span></h1>
-              <p><span data-i18n="Atur tampilan, penyimpanan, dan provider AI untuk ruang kerja Anda.">Atur tampilan, penyimpanan, dan provider AI untuk ruang kerja Anda.</span></p>
+              <p><span data-i18n="Atur tampilan, penyimpanan, Pixabay, dan provider AI untuk ruang kerja Anda.">Atur tampilan, penyimpanan, Pixabay, dan provider AI untuk ruang kerja Anda.</span></p>
             </div>
           </div>
           <section class="appearance-settings" aria-labelledby="appearance-title">
@@ -361,6 +410,22 @@
               <label for="output-directory"><span data-i18n="Direktori salinan">Direktori salinan</span></label>
               <div class="output-input-row"><input id="output-directory" type="text" readonly /><button id="choose-output" type="button"><svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg><span data-i18n="Pilih folder">Pilih folder</span></button></div>
               <span class="settings-help"><span data-i18n="Hasil dikelompokkan dalam jpg, png, svg, eps, mp4, dan mov. JPEG masuk ke jpg.">Hasil dikelompokkan dalam jpg, png, svg, eps, mp4, dan mov. JPEG masuk ke jpg.</span></span>
+            </div>
+          </section>
+          <section class="pixabay-settings" aria-labelledby="pixabay-settings-title">
+            <h2 id="pixabay-settings-title">Pixabay</h2>
+            <div class="settings-field">
+              <label for="pixabay-api-key" data-i18n="API key Pixabay">API key Pixabay</label>
+              <div class="key-input-row">
+                <input id="pixabay-api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="Key disimpan di credential store OS" data-i18n-placeholder="Key disimpan di credential store OS" aria-describedby="pixabay-key-state pixabay-key-help" />
+                <button id="pixabay-toggle-key" class="icon-button" type="button" aria-label="Tampilkan API key" title="Tampilkan API key" data-i18n-aria-label="Tampilkan API key" data-i18n-title="Tampilkan API key"><svg class="icon" aria-hidden="true"><use href="#i-eye" /></svg></button>
+              </div>
+              <div class="key-state-row">
+                <span id="pixabay-key-state" class="settings-help" role="status"></span>
+                <button id="pixabay-clear-key" class="text-button" type="button" hidden data-i18n="Hapus key tersimpan">Hapus key tersimpan</button>
+              </div>
+              <p id="pixabay-key-help" class="settings-help" data-i18n="Gunakan API key pribadi dari Pixabay. Simpan pengaturan untuk mengaktifkan pencarian. Menyimpan tidak mengirim request ke Pixabay.">Gunakan API key pribadi dari Pixabay. Simpan pengaturan untuk mengaktifkan pencarian. Menyimpan tidak mengirim request ke Pixabay.</p>
+              <p id="pixabay-key-warning" class="settings-warning" role="status" hidden></p>
             </div>
           </section>
           <h2 class="ai-settings-title">AI</h2>
@@ -405,10 +470,11 @@
               <span id="vision-help" class="settings-help"><span data-i18n="Jika kemampuan model tidak diketahui, preview tidak dikirim.">Jika kemampuan model tidak diketahui, preview tidak dikirim.</span></span>
             </div>
             <p id="keyring-warning" class="settings-warning" role="status" hidden></p>
-            <p id="settings-status" class="settings-status" role="status" aria-live="polite"></p>
             <p class="settings-privacy-note"><span data-i18n="API key disimpan di credential store OS. Pengaturan lain tersimpan lokal di perangkat ini. Test Connection mengirim permintaan singkat ke provider; generate mengikuti kuota dan biaya provider.">API key disimpan di credential store OS. Pengaturan lain tersimpan lokal di perangkat ini. Test Connection mengirim permintaan singkat ke provider; generate mengikuti kuota dan biaya provider.</span></p>
           </div>
             <div class="settings-actions">
+            <p id="settings-status" class="settings-status" role="status" aria-live="polite"></p>
+
               <button id="test-provider" type="button">
                 <svg class="icon" aria-hidden="true"><use href="#i-connection" /></svg><span data-i18n="Test Connection">Test Connection</span></button>
               <button id="save-settings" class="primary-button" type="button">

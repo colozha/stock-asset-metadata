@@ -5,6 +5,9 @@ import { open, confirm } from "@tauri-apps/plugin-dialog";
 import shutterstockCategories from "./shutterstock-categories.json";
 import type { MessageKey } from "./messages";
 import type {
+  PixabaySettings,
+  PixabayImageType,
+  PixabaySearchPage,
   AppPreferences,
   FolderStatus,
   Inspection,
@@ -28,6 +31,7 @@ import type {
 import "./styles.css";
 import { t, errorText, applyTranslations } from "./i18n";
 import { setupPanelResize } from "./layout";
+import { normalizeQuery, rankKeywords, appendKeywords, type PixabayReference } from "./pixabay";
 
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -77,6 +81,8 @@ const disclosures = new Map<string, boolean>();
 let previewUrl: string | null = null;
 let previewGeneration = 0;
 let aiSettings: AiSettings | null = null;
+let pixabaySettings: PixabaySettings = { hasApiKey: false, keyringError: null };
+let clearPixabayApiKey = false;
 let selectedProvider = "GPT";
 let hasSelectedApiKey = false;
 let clearSelectedApiKey = false;
@@ -511,6 +517,248 @@ function renderKeywords() {
   });
 }
 
+const research = {
+  open: false,
+  available: false,
+  busy: false,
+  generation: 0,
+  query: "",
+  imageType: "all" as PixabayImageType,
+  page: null as PixabaySearchPage | null,
+  error: null as unknown,
+  reset: false,
+  references: new Map<number, PixabayReference>(),
+  chosen: new Set<string>(),
+  addStatus: null as { key: MessageKey; params: unknown[] } | null,
+};
+let researchGridPage: PixabaySearchPage | null = null;
+let researchGridLanguage = "";
+let researchTagsSignature = "";
+let researchTargetPath: string | null = null;
+const researchType = () => document.querySelector<HTMLInputElement>('input[name="pixabay-type"]:checked')!.value as PixabayImageType;
+const researchInputChanged = () => normalizeQuery(el<HTMLInputElement>("pixabay-query").value) !== research.query || researchType() !== research.imageType;
+
+function renderResearch() {
+  const visible = research.open && library === "assets";
+  const asset = current();
+  if (library === "assets" && researchTargetPath !== (asset?.path ?? null)) {
+    researchTargetPath = asset?.path ?? null;
+    research.addStatus = null;
+  }
+  el("pixabay-panel").parentElement!.setAttribute("aria-label", t(visible ? "Referensi Pixabay" : "Preview aset"));
+  const editable = library === "assets" && !!asset && !asset.error && !busy && !aiBusy && !settingsBusy;
+  el("local-preview").hidden = visible;
+  el("pixabay-panel").hidden = !visible;
+  el("pixabay-tools").hidden = library === "output";
+  el<HTMLButtonElement>("pixabay-open").disabled = !native || !research.available || !editable;
+  el("pixabay-availability").textContent = pixabaySettings.keyringError
+    ? errorText(pixabaySettings.keyringError)
+    : t("Atur API key Pixabay melalui Pengaturan untuk mencari referensi.");
+  el("pixabay-configure").hidden = research.available;
+  el<HTMLButtonElement>("pixabay-configure").disabled = !native || busy || aiBusy || settingsBusy;
+  el("pixabay-availability").hidden = research.available;
+  el<HTMLButtonElement>("pixabay-search").disabled = !research.available || (research.busy && !researchInputChanged());
+  el("pixabay-panel").setAttribute("aria-busy", String(research.busy));
+  const page = research.page;
+  const totalPages = page ? Math.max(1, Math.ceil(Math.min(page.totalHits, 500) / page.perPage)) : 1;
+  const changed = researchInputChanged();
+  el<HTMLButtonElement>("pixabay-prev").disabled = research.busy || changed || !page || page.page <= 1;
+  el<HTMLButtonElement>("pixabay-next").disabled = research.busy || changed || !page || page.page >= totalPages;
+  el("pixabay-page").textContent = page ? t("{0} / {1}", page.page, totalPages) : "";
+  el("pixabay-selected").textContent = t("{0} referensi dipilih", research.references.size);
+  const status = research.error ? errorText(research.error)
+    : research.busy ? t("Mencari gambar di Pixabay…")
+    : changed && page ? t("Query atau filter berubah. Jalankan pencarian untuk memperbarui hasil.")
+    : page ? page.hits.length ? t("{0} hasil untuk “{1}”.", page.totalHits, page.query)
+      : t("Tidak ada gambar. Coba query atau filter lain.")
+    : t("Cari gambar, lalu pilih referensi yang relevan dengan aset Anda.");
+  el("pixabay-status").textContent = (research.reset ? t("Pilihan referensi dan saran telah direset.") + " " : "") + status;
+  el("pixabay-status").classList.toggle("is-error", !!research.error);
+  const lang = document.documentElement.lang;
+  if (researchGridPage !== page || researchGridLanguage !== lang) {
+    researchGridPage = page;
+    researchGridLanguage = lang;
+    const grid = el("pixabay-grid");
+    grid.replaceChildren();
+    grid.scrollTop = 0;
+    page?.hits.forEach((hit, index) => {
+      const card = document.createElement("article");
+      card.className = "pixabay-card";
+      card.dataset.hitId = String(hit.id);
+      const thumbnail = document.createElement("div");
+      thumbnail.className = "pixabay-thumbnail";
+      const image = document.createElement("img");
+      image.src = hit.previewUrl;
+      image.alt = hit.tags.join(", ");
+      image.loading = "lazy";
+      image.referrerPolicy = "no-referrer";
+      image.addEventListener("error", () => {
+        const failure = document.createElement("p");
+        failure.textContent = t("Preview tidak dapat dimuat.");
+        thumbnail.replaceChildren(failure);
+      }, { once: true });
+      thumbnail.append(image);
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.hitId = String(hit.id);
+      checkbox.setAttribute("aria-label", t("Pilih referensi {0}: {1}", hit.id, hit.tags.join(", ")));
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          const position = (page.page - 1) * page.perPage + index;
+          research.references.set(hit.id, { hit, position });
+        } else research.references.delete(hit.id);
+        research.addStatus = null;
+        renderResearch();
+      });
+      const contributor = document.createElement("span");
+      contributor.textContent = hit.contributor || t("Kontributor tidak tersedia");
+      label.append(checkbox, contributor);
+      const source = document.createElement("a");
+      source.href = hit.pageUrl;
+      source.className = "pixabay-source";
+      source.textContent = t("Lihat di Pixabay");
+      card.append(thumbnail, label, source);
+      grid.append(card);
+    });
+  }
+  for (const card of el("pixabay-grid").querySelectorAll<HTMLElement>(".pixabay-card")) {
+    const checked = research.references.has(Number(card.dataset.hitId));
+    card.classList.toggle("is-selected", checked);
+    card.querySelector<HTMLInputElement>('input[type="checkbox"]')!.checked = checked;
+  }
+  const suggestions = rankKeywords(research.references.values());
+  const available = new Set(suggestions.map((tag) => tag.key));
+  for (const key of research.chosen) if (!available.has(key)) research.chosen.delete(key);
+  el("pixabay-suggestions").hidden = !visible;
+  const signature = JSON.stringify([lang, suggestions, research.references.size]);
+  if (signature !== researchTagsSignature) {
+    researchTagsSignature = signature;
+    const focusedKey = (document.activeElement as HTMLElement | null)?.dataset.tagKey;
+    const tags = el("pixabay-tags");
+    tags.replaceChildren();
+    const relevanceLabels = { high: "Tinggi", medium: "Sedang", low: "Rendah" } as const;
+    for (const suggestion of suggestions) {
+      const label = document.createElement("label");
+      label.className = "pixabay-tag";
+      label.dataset.relevance = suggestion.relevance;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.tagKey = suggestion.key;
+      checkbox.checked = research.chosen.has(suggestion.key);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) research.chosen.add(suggestion.key);
+        else research.chosen.delete(suggestion.key);
+        research.addStatus = null;
+        renderResearch();
+      });
+      const text = document.createElement("span");
+      text.textContent = suggestion.text;
+      const count = document.createElement("small");
+      count.textContent = t("{0}/{1} · {2}", suggestion.count, research.references.size, t(relevanceLabels[suggestion.relevance]));
+      label.append(checkbox, text, count);
+      tags.append(label);
+      if (focusedKey === suggestion.key) checkbox.focus({ preventScroll: true });
+    }
+    if (!suggestions.length) tags.textContent = t(research.references.size ? "Referensi terpilih tidak memiliki tag." : "Pilih gambar referensi untuk melihat saran keyword.");
+  }
+  for (const input of el("pixabay-tags").querySelectorAll<HTMLInputElement>("input")) input.checked = research.chosen.has(input.dataset.tagKey!);
+  el("pixabay-target").textContent = editable ? t("Target draft: {0}", asset!.name) : t("Pilih aset lokal yang dapat diedit untuk menambahkan keyword.");
+  el<HTMLButtonElement>("pixabay-add").disabled = !editable || !research.references.size || !research.chosen.size;
+  el("pixabay-add-status").textContent = research.addStatus ? t(research.addStatus.key, ...research.addStatus.params) : "";
+  renderPixabaySettings();
+}
+
+async function searchResearch(page = 1) {
+  if (!native || !research.available || !research.open) return;
+  const query = normalizeQuery(el<HTMLInputElement>("pixabay-query").value);
+  const imageType = researchType();
+  if (!query || [...query].length > 100 || /[\u0000-\u001f\u007f]/u.test(query)) {
+    research.error = { key: "Query Pixabay harus berisi 1–100 karakter.", params: [], detail: null };
+    renderResearch();
+    el("pixabay-query").focus();
+    return;
+  }
+  const changed = query !== research.query || imageType !== research.imageType;
+  if (page !== 1 && (changed || research.busy)) return;
+  if (research.busy && !changed) return;
+  const generation = ++research.generation;
+  if (changed) {
+    research.reset = research.references.size > 0 || research.chosen.size > 0;
+    research.references.clear();
+    research.chosen.clear();
+    research.page = null;
+    research.addStatus = null;
+  }
+  research.query = query;
+  research.imageType = imageType;
+  research.busy = true;
+  research.error = null;
+  renderResearch();
+  try {
+    const result = await invoke<PixabaySearchPage>("search_pixabay_images", { query, page, imageType });
+    if (generation !== research.generation) return;
+    research.page = result;
+  } catch (error) {
+    if (generation !== research.generation) return;
+    research.error = error;
+  } finally {
+    if (generation === research.generation) { research.busy = false; renderResearch(); }
+  }
+}
+
+el("pixabay-open").addEventListener("click", () => {
+  if (el<HTMLButtonElement>("pixabay-open").disabled) return;
+  research.open = true;
+  renderResearch();
+  el("pixabay-query").focus();
+});
+el("pixabay-close").addEventListener("click", () => {
+  research.generation++;
+  research.open = false;
+  research.busy = false;
+  research.query = "";
+  research.imageType = "all";
+  research.page = null;
+  research.references.clear();
+  research.chosen.clear();
+  research.error = null;
+  research.addStatus = null;
+  research.reset = false;
+  el<HTMLFormElement>("pixabay-form").reset();
+  renderResearch();
+  void loadPreview();
+  el("pixabay-open").focus();
+});
+el("pixabay-form").addEventListener("submit", (event) => { event.preventDefault(); void searchResearch(); });
+el("pixabay-query").addEventListener("input", () => renderResearch());
+for (const input of document.querySelectorAll<HTMLInputElement>('input[name="pixabay-type"]')) input.addEventListener("change", () => renderResearch());
+el("pixabay-prev").addEventListener("click", () => void searchResearch((research.page?.page ?? 1) - 1));
+el("pixabay-next").addEventListener("click", () => void searchResearch((research.page?.page ?? 1) + 1));
+document.addEventListener("click", (event) => {
+  const link = (event.target as Element).closest<HTMLAnchorElement>("a.pixabay-source");
+  if (!link) return;
+  event.preventDefault();
+  if (native) void invoke("open_pixabay_page", { url: link.href }).catch((error) => {
+    research.error = error;
+    renderResearch();
+  });
+});
+document.addEventListener("auxclick", (event) => {
+  if ((event.target as Element).closest("a.pixabay-source")) event.preventDefault();
+});
+el("pixabay-add").addEventListener("click", () => {
+  const asset = current();
+  if (!research.open || library !== "assets" || !asset || asset.error || busy || aiBusy || settingsBusy) return;
+  const result = appendKeywords(asset.draft.keywords, rankKeywords(research.references.values()), research.chosen);
+  asset.draft.keywords = result.keywords;
+  if (result.added) asset.saveError = null;
+  research.addStatus = { key: "{0} keyword ditambahkan ke {1}; {2} duplikat dilewati. Simpan metadata untuk menulis perubahan.", params: [result.added, asset.name, result.duplicates] };
+  research.chosen.clear();
+  el<HTMLTextAreaElement>("keywords").value = asset.draft.keywords.join(", ");
+  render();
+});
+
 function render(updateFields = false) {
   const asset = current();
   const output = library === "output";
@@ -609,6 +857,7 @@ function render(updateFields = false) {
       ? t("Backup: {0}", asset.backupPath)
       : "";
   renderKeywords();
+  renderResearch();
   const mode = preferences?.saveMode ?? "copy";
   el("save-mode-summary").textContent = mode === "copy" ? t("Direktori output") : t("Ganti sumber + backup");
   el("save-destination-summary").textContent = mode === "copy"
@@ -1150,6 +1399,44 @@ function providerDraft(): ProviderDraft {
   };
 }
 
+function renderPixabaySettings() {
+  const input = el<HTMLInputElement>("pixabay-api-key");
+  const toggle = el<HTMLButtonElement>("pixabay-toggle-key");
+  const label = t(input.type === "password" ? "Tampilkan API key" : "Sembunyikan API key");
+  toggle.title = label;
+  toggle.setAttribute("aria-label", label);
+  toggle.setAttribute("aria-pressed", String(input.type !== "password"));
+  el("pixabay-key-state").textContent = t(clearPixabayApiKey
+    ? "API key tersimpan akan dihapus saat pengaturan disimpan."
+    : pixabaySettings.hasApiKey ? "API key tersimpan di credential store OS. Isi hanya untuk menggantinya." : "API key belum disimpan.");
+  const clear = el<HTMLButtonElement>("pixabay-clear-key");
+  clear.hidden = !pixabaySettings.hasApiKey && !clearPixabayApiKey;
+  clear.textContent = t(clearPixabayApiKey ? "Batalkan penghapusan" : "Hapus key tersimpan");
+  const warning = el("pixabay-key-warning");
+  warning.hidden = !pixabaySettings.keyringError;
+  warning.textContent = pixabaySettings.keyringError ? errorText(pixabaySettings.keyringError) : "";
+  for (const id of ["pixabay-api-key", "pixabay-toggle-key", "pixabay-clear-key"])
+    el<HTMLInputElement | HTMLButtonElement>(id).disabled = !native || settingsBusy;
+}
+
+function applyPixabaySettings(value: PixabaySettings) {
+  pixabaySettings = value;
+  research.available = value.hasApiKey && !value.keyringError;
+  renderResearch();
+}
+
+async function loadPixabaySettings() {
+  try { applyPixabaySettings(await invoke<PixabaySettings>("load_pixabay_settings")); }
+  catch (error) { applyPixabaySettings({ hasApiKey: false, keyringError: error as PixabaySettings["keyringError"] }); }
+}
+
+function resetPixabayKeyInput() {
+  el<HTMLInputElement>("pixabay-api-key").value = "";
+  el<HTMLInputElement>("pixabay-api-key").type = "password";
+  clearPixabayApiKey = false;
+  renderPixabaySettings();
+}
+
 function setSettingsBusy(value: boolean) {
   settingsBusy = value;
   renderProviderSettings();
@@ -1160,7 +1447,7 @@ function setSettingsBusy(value: boolean) {
 async function saveSettings() {
   if (!requireDesktop() || !preferences || settingsBusy) return;
   const draft = providerDraft();
-  // Validate before writing either settings file. Saving never contacts the provider.
+  // Validate before saving any section. Saving never contacts providers.
   if (draft.endpointUrl) {
     try {
       const url = new URL(draft.endpointUrl);
@@ -1179,32 +1466,61 @@ async function saveSettings() {
     : provider);
   const providerChanged = !!aiSettings && (JSON.stringify(providerSettings) !== JSON.stringify(aiSettings.providerSettings)
     || selectedProvider !== aiSettings.activeProvider || !!draft.apiKey || clearSelectedApiKey);
+  const pixabayKey = el<HTMLInputElement>("pixabay-api-key").value.trim();
+  const pixabayChanged = !!pixabayKey || clearPixabayApiKey;
+  const outcomes: { label: MessageKey; error: unknown | null }[] = [];
   setSettingsBusy(true);
   setSettingsStatus(t("Menyimpan pengaturan…"));
-  let appSaved = false;
   try {
-    preferences = await invoke<AppPreferences>("save_app_preferences", {
-      saveMode: el<HTMLSelectElement>("save-mode").value as SaveMode,
-      outputDir, language, theme,
-    });
-    appSaved = true;
-    if (previousOutput !== preferences.outputDir) {
-      assets.forEach((asset) => { asset.lastSavedCopy = null; asset.savedCopy = null; });
-      await readOutputs();
-    }
-    applyAppearance(preferences.language, preferences.theme);
-    if (providerChanged && aiSettings) {
-      aiSettings = await invoke<AiSettings>("save_ai_settings", {
-        providerSettings, selectedProvider, apiKey: draft.apiKey, clearApiKey: clearSelectedApiKey,
-        descriptionLength: aiSettings.descriptionLength, keywordCount: aiSettings.keywordCount,
+    try {
+      preferences = await invoke<AppPreferences>("save_app_preferences", {
+        saveMode: el<HTMLSelectElement>("save-mode").value as SaveMode,
+        outputDir, language, theme,
       });
-      renderProviderSettings(true);
+      if (previousOutput !== preferences.outputDir) {
+        assets.forEach((asset) => { asset.lastSavedCopy = null; asset.savedCopy = null; });
+        await readOutputs();
+      }
+      applyAppearance(preferences.language, preferences.theme);
+      outcomes.push({ label: "Tampilan dan penyimpanan", error: null });
+    } catch (error) {
+      outcomes.push({ label: "Tampilan dan penyimpanan", error });
     }
-    setSettingsStatus(t("Pengaturan tersimpan."), "success");
-  } catch (error) {
-    // Refresh the saved state without replacing the user's unsaved form fields/key.
-    try { aiSettings = await invoke<AiSettings>("load_ai_settings"); } catch { /* Keep last known state. */ }
-    setSettingsStatus(t(appSaved ? "Pengaturan aplikasi tersimpan. Pengaturan AI gagal: {0}" : "Pengaturan tidak tersimpan: {0}", errorText(error)), "error");
+    if (providerChanged && aiSettings) {
+      try {
+        aiSettings = await invoke<AiSettings>("save_ai_settings", {
+          providerSettings, selectedProvider, apiKey: draft.apiKey, clearApiKey: clearSelectedApiKey,
+          descriptionLength: aiSettings.descriptionLength, keywordCount: aiSettings.keywordCount,
+        });
+        renderProviderSettings(true);
+        outcomes.push({ label: "AI", error: null });
+      } catch (error) {
+        outcomes.push({ label: "AI", error });
+        // Refresh status while preserving failed AI inputs and pending deletion.
+        try { aiSettings = await invoke<AiSettings>("load_ai_settings"); } catch { /* Keep last known state. */ }
+      }
+    }
+    if (pixabayChanged) {
+      try {
+        const value = await invoke<PixabaySettings>("save_pixabay_settings", {
+          apiKey: pixabayKey || null, clearApiKey: clearPixabayApiKey,
+        });
+        if (value.keyringError) throw value.keyringError;
+        applyPixabaySettings(value);
+        resetPixabayKeyInput();
+        outcomes.push({ label: "Pixabay", error: null });
+      } catch (error) {
+        outcomes.push({ label: "Pixabay", error });
+        await loadPixabaySettings();
+      }
+    }
+    const failed = outcomes.some((outcome) => outcome.error !== null);
+    const status = failed
+      ? outcomes.map(({ label, error }) => error === null
+        ? t("{0}: tersimpan.", t(label))
+        : t("{0}: gagal — {1}", t(label), errorText(error))).join(" ")
+      : t("Pengaturan tersimpan.");
+    setSettingsStatus(status, failed ? "error" : "success");
   } finally {
     updateAiSetupStatus();
     updateRuntimeLabel();
@@ -1346,6 +1662,7 @@ async function openSettings() {
   settingsOpen = true;
   el("app").classList.add("settings-open");
   el("settings-view").hidden = false;
+  resetPixabayKeyInput();
   previewCacheBytes = null;
   previewCacheStatus = null;
   renderPreviewCacheSize();
@@ -1357,6 +1674,7 @@ async function openSettings() {
     await preferenceWriteQueue;
     if (!settingsOpen) return;
     await loadAppPreferences();
+    await loadPixabaySettings();
     await loadAiSettings();
     setSettingsStatus("");
   } catch (error) {
@@ -1430,6 +1748,7 @@ function closeSettings() {
   el<HTMLInputElement>("provider-api-key").value = "";
   el<HTMLInputElement>("provider-api-key").type = "password";
   clearSelectedApiKey = false;
+  resetPixabayKeyInput();
   render();
   el<HTMLButtonElement>("open-settings").focus();
 }
@@ -1511,6 +1830,25 @@ el<HTMLInputElement>("provider-model").addEventListener("input", renderVisionHel
 el<HTMLSelectElement>("vision-mode").addEventListener("change", renderVisionHelp);
 el("refresh-models").addEventListener("click", () => void refreshProviderModels());
 el("test-provider").addEventListener("click", () => void testProviderConnection());
+el("pixabay-api-key").addEventListener("input", () => {
+  clearPixabayApiKey = false;
+  renderPixabaySettings();
+});
+el("pixabay-toggle-key").addEventListener("click", () => {
+  const input = el<HTMLInputElement>("pixabay-api-key");
+  input.type = input.type === "password" ? "text" : "password";
+  renderPixabaySettings();
+  input.focus();
+});
+el("pixabay-clear-key").addEventListener("click", () => {
+  clearPixabayApiKey = !clearPixabayApiKey;
+  if (clearPixabayApiKey) el<HTMLInputElement>("pixabay-api-key").value = "";
+  renderPixabaySettings();
+});
+el("pixabay-configure").addEventListener("click", async () => {
+  await openSettings();
+  if (settingsOpen && !settingsBusy) el("pixabay-api-key").focus();
+});
 el("save-settings").addEventListener("click", () => void saveSettings());
 el<HTMLSelectElement>("description-length").addEventListener("change", () => void saveGeneratorPreferences());
 el<HTMLInputElement>("keyword-target-count").addEventListener("change", () => void saveGeneratorPreferences());
@@ -1650,6 +1988,7 @@ el("additional-context").addEventListener("input", () => {
 });
 
 async function initializeDesktop() {
+  await loadPixabaySettings();
   try {
     await loadAppPreferences();
     preferences?.folders.forEach((path) => folders.set(path, { path, error: null }));

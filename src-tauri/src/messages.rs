@@ -66,6 +66,22 @@ pub fn serialize_error<S: Serializer>(
     error.clone().map(AppError::from).serialize(serializer)
 }
 const MESSAGES: &[(&str, &[&str])] = &[
+    ("Pengaturan Pixabay tidak dapat disimpan.", &["Pengaturan Pixabay tidak dapat disimpan."]),
+    ("Pengaturan Pixabay tidak dapat dimuat.", &["Pengaturan Pixabay tidak dapat dimuat."]),
+    ("Pilih penggantian atau penghapusan key Pixabay.", &["Pilih penggantian atau penghapusan key Pixabay."]),
+    ("Atur API key Pixabay melalui Pengaturan untuk mencari referensi.", &["Atur API key Pixabay melalui Pengaturan untuk mencari referensi."]),
+    ("Filter gambar Pixabay tidak valid.", &["Filter gambar Pixabay tidak valid."]),
+    ("Query Pixabay harus berisi 1–100 karakter.", &["Query Pixabay harus berisi 1–100 karakter."]),
+    ("URL sumber Pixabay tidak valid.", &["URL sumber Pixabay tidak valid."]),
+    ("URL preview Pixabay tidak valid.", &["URL preview Pixabay tidak valid."]),
+    ("Respons Pixabay tidak valid.", &["Respons Pixabay tidak valid."]),
+    ("Cache Pixabay tidak dapat digunakan: {0}", &["Cache Pixabay tidak dapat digunakan: ", ""]),
+    ("Endpoint pengujian Pixabay harus memakai loopback HTTP.", &["Endpoint pengujian Pixabay harus memakai loopback HTTP."]),
+    ("Halaman Pixabay tidak valid. Jalankan pencarian ulang.", &["Halaman Pixabay tidak valid. Jalankan pencarian ulang."]),
+    ("Pencarian Pixabay gagal: {0}", &["Pencarian Pixabay gagal: ", ""]),
+    ("Batas request Pixabay tercapai. Coba lagi setelah {0} detik.", &["Batas request Pixabay tercapai. Coba lagi setelah ", " detik."]),
+    ("Respons Pixabay melebihi batas ukuran.", &["Respons Pixabay melebihi batas ukuran."]),
+    ("Halaman Pixabay tidak dapat dibuka: {0}", &["Halaman Pixabay tidak dapat dibuka: ", ""]),
     ("Pilih kategori video Shutterstock yang valid.", &["Pilih kategori video Shutterstock yang valid."]),
     ("Pilih video MP4/MOV untuk diekspor.", &["Pilih video MP4/MOV untuk diekspor."]),
     ("Nama video CSV tidak valid: {0}", &["Nama video CSV tidak valid: ", ""]),

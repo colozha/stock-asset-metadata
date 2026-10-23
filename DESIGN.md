@@ -26,6 +26,18 @@ colors:
   modified: "#6f528e"
   error: "#913838"
   saved: "#36564a"
+  relevance-high-bg: "#e6efec"
+  relevance-high-ink: "#36564a"
+  relevance-medium-bg: "#e7eaf5"
+  relevance-medium-ink: "#414c73"
+  relevance-low-bg: "#edf0f2"
+  relevance-low-ink: "#506379"
+  relevance-high-bg-dark: "#283e37"
+  relevance-high-ink-dark: "#b0d3c0"
+  relevance-medium-bg-dark: "#323b53"
+  relevance-medium-ink-dark: "#c7cfef"
+  relevance-low-bg-dark: "#2e3c48"
+  relevance-low-ink-dark: "#bfcedb"
 typography:
   body:
     fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
@@ -165,6 +177,7 @@ The palette is cool and subdued, with limited warm emphasis. Frontmatter values 
 - **White** (`white`) and **Disabled Field** (`field-disabled`): editable and unavailable field surfaces.
 - **Secondary Hover / Active**: understated button state fills. **Keyword Surface / Border**: the ordered keyword rows.
 - **Error** (`error`) and **Saved** (`saved`): explicit feedback text, always accompanied by a written result or next action.
+- **Reference Coverage** (`relevance-high-*`, `relevance-medium-*`, `relevance-low-*`): muted green, blue, and neutral background/ink pairs for Pixabay tag-frequency labels. Always pair color with a written level and reference count. Unsuffixed values document light; `-dark` entries document the same CSS properties under `data-theme="dark"`. These semantic labels describe coverage among selected references; purple continues to mark selection and focus.
 
 **The Coral Save Rule.** Reserve the coral fill for the save action; use cool controls for import, navigation, and editing.
 
