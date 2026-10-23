@@ -1252,7 +1252,8 @@ progress::-webkit-progress-value {
 }
 
 /* Shared select geometry keeps text clear of native WebKit control padding. */
-.csv-dialog {
+.csv-dialog,
+.about-dialog {
   width: min(560px, calc(100vw - 48px));
   max-height: calc(100dvh - 48px);
   padding: 24px;
@@ -1261,9 +1262,13 @@ progress::-webkit-progress-value {
   color: var(--text);
   overflow-y: auto;
 }
-.csv-dialog::backdrop { background: var(--modal-backdrop); }
-.csv-dialog h2 { margin: 0 0 16px; font-size: 17px; }
-.csv-dialog p { line-height: 1.65; }
+.csv-dialog::backdrop, .about-dialog::backdrop { background: var(--modal-backdrop); }
+.csv-dialog h2, .about-dialog h2 { margin: 0 0 16px; font-size: 17px; }
+.csv-dialog p, .about-dialog p { line-height: 1.65; }
+.about-dialog { width: min(400px, calc(100vw - 48px)); }
+.about-details { display: grid; grid-template-columns: auto 1fr; gap: 12px 24px; margin: 20px 0 0; }
+.about-details dt { color: var(--muted); }
+.about-details dd { margin: 0; overflow-wrap: anywhere; }
 .csv-dialog .settings-field { margin: 20px 0; }
 .csv-files {
   max-height: 160px;

@@ -2,6 +2,7 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, confirm } from "@tauri-apps/plugin-dialog";
+import appConfig from "../src-tauri/tauri.conf.json";
 import shutterstockCategories from "./shutterstock-categories.json";
 import type { MessageKey } from "./messages";
 import type {
@@ -1139,6 +1140,15 @@ function updateCsvOptions() {
   el<HTMLButtonElement>("csv-export").disabled = csvWriting || (enabled && !category.value);
 }
 
+el("about-name").textContent = appConfig.productName;
+el("about-version").textContent = appConfig.version;
+el("open-about").addEventListener("click", () => {
+  el<HTMLDialogElement>("about-dialog").showModal();
+});
+el("about-dialog").addEventListener("close", () => {
+  el("open-about").focus();
+});
+
 el("csv-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!csvWriting) void save(true);
@@ -1909,7 +1919,7 @@ el("apply-batch").addEventListener("click", () => {
   render(false);
 });
 document.addEventListener("keydown", (event) => {
-  if (el<HTMLDialogElement>("csv-dialog").open) return;
+  if (el<HTMLDialogElement>("csv-dialog").open || el<HTMLDialogElement>("about-dialog").open) return;
   if (settingsOpen && event.key === "Escape") {
     event.preventDefault();
     closeSettings();

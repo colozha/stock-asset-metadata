@@ -1,6 +1,6 @@
 [package]
 name = "stock-asset-metadata"
-version = "0.1.2"
+version = "0.1.3"
 description = "Local metadata editor for microstock assets"
 edition = "2021"
 rust-version = "1.88"

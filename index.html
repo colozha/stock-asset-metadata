@@ -57,6 +57,7 @@
   <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
   <path d="M15.033 13.44a.647.647 0 0 1 0 1.12l-4.065 2.352a.645.645 0 0 1-.968-.56v-4.704a.645.645 0 0 1 .967-.56z" />
         </symbol>
+        <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></symbol>
         <symbol id="i-settings" viewBox="0 0 24 24">
           <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
   <circle cx="12" cy="12" r="3" />
@@ -101,6 +102,8 @@
         </div>
         <div class="toolbar-actions">
           <span id="runtime-label" class="runtime-label"><span data-i18n="Lokal · AI opsional">Lokal · AI opsional</span></span>
+          <button id="open-about" aria-haspopup="dialog" aria-controls="about-dialog">
+            <svg class="icon" aria-hidden="true"><use href="#i-info" /></svg><span data-i18n="Tentang">Tentang</span></button>
           <button id="open-settings" class="settings-trigger">
             <svg class="icon" aria-hidden="true"><use href="#i-settings" /></svg><span data-i18n="Settings">Settings</span></button>
           <button id="add-files">
@@ -516,6 +519,18 @@
           ><span id="save-label"><span data-i18n="Simpan metadata">Simpan metadata</span></span>
         </button>
       </footer>
+      <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
+        <h2 id="about-title" data-i18n="Tentang aplikasi">Tentang aplikasi</h2>
+        <p id="about-name"></p>
+        <dl class="about-details">
+          <dt data-i18n="Versi">Versi</dt><dd id="about-version"></dd>
+          <dt data-i18n="Lisensi">Lisensi</dt><dd>MIT</dd>
+          <dt data-i18n="Pengembang">Pengembang</dt><dd>Husain</dd>
+        </dl>
+        <form method="dialog" class="csv-actions">
+          <button autofocus data-i18n="Tutup">Tutup</button>
+        </form>
+      </dialog>
       <dialog id="csv-dialog" class="csv-dialog" aria-labelledby="csv-title" aria-describedby="csv-instructions">
         <form id="csv-form">
           <h2 id="csv-title" data-i18n="Simpan metadata video">Simpan metadata video</h2>

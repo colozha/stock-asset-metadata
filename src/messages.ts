@@ -1,5 +1,10 @@
 // Every user-facing message must have both ID and EN. Keys are stable source messages.
 export const messages = {
+  "Tentang": {"id": "Tentang", "en": "About"},
+  "Tentang aplikasi": {"id": "Tentang aplikasi", "en": "About the app"},
+  "Versi": {"id": "Versi", "en": "Version"},
+  "Lisensi": {"id": "Lisensi", "en": "License"},
+  "Pengembang": {"id": "Pengembang", "en": "Developer"},
   "Keluaran": {"id": "Keluaran", "en": "Output"},
   "Buka pencarian": {"id": "Buka pencarian", "en": "Open search"},
   "Buka pencarian {0}": {"id": "Buka pencarian {0}", "en": "Open search in {0}"},
