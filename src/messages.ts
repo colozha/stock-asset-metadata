@@ -71,6 +71,8 @@ export const messages = {
   "Transportation": {"id":"Transportasi","en":"Transportation"},
   "Urutkan": {"id": "Urutkan", "en": "Sort by"},
   "Nama": {"id": "Nama", "en": "Name"},
+  "Resolusi": {"id": "Resolusi", "en": "Resolution"},
+  "Tidak tersedia": {"id": "Tidak tersedia", "en": "Unavailable"},
   "Tanggal dibuat": {"id": "Tanggal dibuat", "en": "Created date"},
   "Tanggal diubah": {"id": "Tanggal diubah", "en": "Modified date"},
   "Urutan naik; klik untuk menurun": {"id": "Urutan naik; klik untuk menurun", "en": "Ascending; click for descending"},

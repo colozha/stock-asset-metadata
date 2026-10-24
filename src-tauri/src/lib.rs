@@ -1,3 +1,4 @@
+pub mod asset_details;
 pub mod files;
 pub mod messages;
 pub mod metadata;
@@ -267,25 +268,42 @@ mod desktop {
         })
     }
 
+    fn authorize_preview_path(path: &str, state: &AppState) -> Result<(), super::messages::AppError> {
+        if !state
+            .snapshots
+            .lock()
+            .map_err(|e| e.to_string())?
+            .contains_key(Path::new(path))
+            && !state
+                .output_previews
+                .lock()
+                .map_err(|error| error.to_string())?
+                .contains(Path::new(path))
+        {
+            return Err("Impor file terlebih dahulu.".into());
+        }
+        Ok(())
+    }
+
+    #[tauri::command]
+    async fn read_asset_details(
+        path: String,
+        state: State<'_, AppState>,
+    ) -> Result<super::asset_details::AssetDetails, super::messages::AppError> {
+        authorize_preview_path(&path, &state)?;
+        tauri::async_runtime::spawn_blocking(move || super::asset_details::read(Path::new(&path)))
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(Into::into)
+    }
+
     #[tauri::command]
     async fn read_preview(
         path: String,
         app: tauri::AppHandle,
         state: State<'_, AppState>,
     ) -> Result<tauri::ipc::Response, super::messages::AppError> {
-        if !state
-            .snapshots
-            .lock()
-            .map_err(|e| e.to_string())?
-            .contains_key(Path::new(&path))
-            && !state
-                .output_previews
-                .lock()
-                .map_err(|error| error.to_string())?
-                .contains(Path::new(&path))
-        {
-            return Err("Impor file terlebih dahulu.".into());
-        }
+        authorize_preview_path(&path, &state)?;
         let queue = state.previews.clone();
         let cache_dir = preview_cache_dir(&app)?;
         tauri::async_runtime::spawn_blocking(move || {
@@ -525,6 +543,7 @@ mod desktop {
                 save_app_preferences,
                 remove_asset_folder,
                 read_preview,
+                read_asset_details,
                 get_preview_cache_size,
                 clear_preview_cache,
                 save_metadata,

@@ -13,6 +13,7 @@ import type {
   FolderStatus,
   Inspection,
   Asset,
+  AssetDetails,
   AssetDraft,
   AiGenerationRequest,
   AiModelOption,
@@ -81,6 +82,7 @@ const explicitFiles = new Set<string>();
 const disclosures = new Map<string, boolean>();
 let previewUrl: string | null = null;
 let previewGeneration = 0;
+let detailsGeneration = 0;
 let aiSettings: AiSettings | null = null;
 let pixabaySettings: PixabaySettings = { hasApiKey: false, keyringError: null };
 let clearPixabayApiKey = false;
@@ -883,8 +885,42 @@ function render(updateFields = false) {
   el("progress").hidden = !busy || (el<HTMLDialogElement>("csv-dialog").open && !csvWriting);
 }
 
+function renderAssetDetails(asset: AssetDraft | undefined, details?: AssetDetails) {
+  el("preview-details").hidden = !asset;
+  const locale = document.documentElement.lang === "en" ? "en-GB" : "id-ID";
+  const dateFormat = new Intl.DateTimeFormat(locale, {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  });
+  const dateText = (value: number | null | undefined) =>
+    value != null && Number.isFinite(new Date(value).getTime())
+      ? dateFormat.format(new Date(value)) : t("Tidak tersedia");
+  const resolution = details?.resolution;
+  const numberFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 2, useGrouping: false });
+  el("preview-resolution").textContent = resolution
+    ? `${numberFormat.format(resolution.width)} × ${numberFormat.format(resolution.height)} ${resolution.unit}`
+    : details ? t("Tidak tersedia") : "…";
+  el("preview-created").textContent = dateText(details ? details.createdAt : asset?.createdAt);
+  el("preview-modified").textContent = dateText(details ? details.modifiedAt : asset?.modifiedAt);
+}
+
+async function loadAssetDetails() {
+  const generation = ++detailsGeneration;
+  const asset = current();
+  renderAssetDetails(asset);
+  if (!asset) return;
+  try {
+    const details = await invoke<AssetDetails>("read_asset_details", { path: asset.path });
+    if (generation === detailsGeneration) renderAssetDetails(asset, details);
+  } catch {
+    if (generation === detailsGeneration) {
+      renderAssetDetails(asset, { resolution: null, createdAt: null, modifiedAt: null });
+    }
+  }
+}
+
 async function loadPreview() {
   const generation = ++previewGeneration;
+  void loadAssetDetails();
   const asset = current();
   const image = el<HTMLImageElement>("preview-image");
   image.hidden = true;
@@ -1247,6 +1283,7 @@ async function save(confirmed = false) {
     busy = dialog.open;
     render(true);
     if (!dialog.open) el("save").focus();
+    void loadAssetDetails();
   }
 }
 

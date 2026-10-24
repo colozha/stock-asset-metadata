@@ -72,6 +72,15 @@ Referensi/tag bukan validasi lisensi atau hak submission microstock. Ikuti
 Preview video bukan pemutar video. Kompatibilitas pembacaan metadata mengikuti
 portal tujuan; XMP tertanam tidak menjamin metadata terbaca di semua agency.
 
+Header preview menampilkan resolusi sumber serta tanggal dibuat/diubah dari
+filesystem dalam zona waktu lokal. JPG/PNG dan video memakai px, SVG memakai
+ukuran kanvas intrinsik dalam px, dan EPS memakai BoundingBox dalam pt.
+Resolusi video memerlukan `ffprobe` di PATH (disertakan dalam distribusi FFmpeg).
+Nilai yang tidak dapat dibaca menampilkan “Tidak tersedia”; penyuntingan metadata
+tetap tersedia bila hanya pembacaan resolusi atau preview yang gagal.
+Pembacaan ukuran SVG dan bagian PostScript EPS dibatasi 64 MiB; EPS tanpa
+BoundingBox yang valid menampilkan “Tidak tersedia”.
+
 ## Build
 
 Prasyarat: **Node.js 22.12+**, npm, dan **Rust stable**. Dari direktori project

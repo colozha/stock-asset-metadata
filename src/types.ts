@@ -25,6 +25,11 @@ export interface Asset {
   metadata: Metadata;
   error: AppError | string | null;
 }
+export interface AssetDetails {
+  resolution: { width: number; height: number; unit: "px" | "pt" } | null;
+  createdAt: number | null;
+  modifiedAt: number | null;
+}
 export interface AssetDraft extends Asset {
   draft: Metadata;
   additionalContext: string;

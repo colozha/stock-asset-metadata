@@ -1,5 +1,59 @@
 # Hasil validasi
 
+## Detail header preview aset — 24 Oktober 2026
+
+Header aset aktif menampilkan resolusi sumber/ukuran kanvas dan timestamp
+filesystem dalam zona waktu lokal. Pembacaan detail hanya dilakukan untuk aset
+aktif, terpisah dari thumbnail dan tanpa memperbarui snapshot konflik sumber.
+
+Pemeriksaan yang **lulus**:
+
+- `npm run build` dan build debug Tauri dengan `cargo build`.
+- `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features`:
+  **29 tes** (19 unit, 10 integrasi). Tes library desktop: **29 tes**.
+  Lima tes baru mencakup JPG/JPEG/PNG di atas batas ukuran thumbnail, orientasi
+  EXIF, timestamp filesystem/null, file rusak/hilang, SVG viewBox/satuan fisik,
+  EPS ASCII/biner, BoundingBox trailer/HiRes/nested/invalid, MP4/MOV, rotasi
+  video, ffprobe hilang, timeout, dan keluaran di atas batas 64 KiB.
+- Renderer Chromium dengan mock IPC resmi Tauri: ID/EN × light/dark pada
+  1440×900 dan 1024×700, termasuk preview selebar 240 px. Resolusi sumber
+  ditampilkan, nama panjang dipotong, informasi membungkus tanpa overflow,
+  respons aset lama diabaikan, Refresh mempertahankan draft, kegagalan preview
+  tidak menyembunyikan detail atau mengunci editor, nilai kosong diterjemahkan,
+  dan Output tetap hanya baca. Tidak ada error runtime aplikasi.
+- Tauri native Fedora melalui `tauri-driver`/WebKitWebDriver memakai D-Bus,
+  Secret Service, XDG config/data/cache, dan salinan fixture terisolasi.
+  IPC asli mengembalikan ukuran SVG/EPS/MP4/MOV serta timestamp yang cocok
+  dengan filesystem; path yang belum diimpor ditolak. Simpan + backup
+  memperbarui modified date; draft dan urutan keyword bertahan saat bahasa/tema
+  disimpan. ID/EN × light/dark diperiksa pada kedua ukuran native, tanpa
+  overflow. Akses Output berhasil; pembacaan detail setelah perubahan eksternal
+  tetap menyebabkan penolakan simpan karena konflik sumber.
+
+Browser plugin tidak tersedia; renderer memakai Playwright dari cache.
+Chromium uji menonaktifkan LocalNetworkAccessChecks agar websocket HMR Vite
+loopback dapat terhubung. Bukti dan skrip sementara berada di
+`/tmp/asset-details-qa/`, termasuk `renderer-results.json` dan
+`native/results.json`.
+
+**Batas bukti:** belum menjalankan Windows atau menguji pembaca layar.
+Resolusi video memerlukan ffprobe; SVG dan bagian
+PostScript EPS dibatasi 64 MiB untuk pembacaan ukuran.
+
+Pembaruan distribusi pada **24 Oktober 2026, 18:14 WIB**: `npm run bundle`
+menghasilkan RPM **0.1.3-1 x86_64** yang memuat detail header preview. Paket
+dipasang ulang melalui `pkexec rpm -Uvh --replacepkgs` dengan path absolut.
+`rpm -V stock-asset-metadata` bersih dan semua library executable teresolusi.
+SHA-256 executable terpasang cocok dengan manifest payload RPM:
+`a1de3502c69340f3001c4f60c3c45b33fedfeef0851463f9d85eb3cf39e1bb72`.
+
+Smoke check `/usr/bin/stock-asset-metadata` melalui WebKitWebDriver membuka
+frontend terbundel dari `tauri://localhost`, menampilkan resolusi SVG dan kedua
+tanggal filesystem pada panel preview 240 px, serta membaca resolusi MP4 melalui
+IPC native/ffprobe. Pengujian memakai salinan fixture, konfigurasi XDG, dan
+Secret Service terisolasi di `/tmp/asset-details-qa/installed/`; aplikasi kerja
+pengguna yang sudah berjalan tidak ditutup.
+
 
 
 ## API key Pixabay melalui Settings — 23 Oktober 2026

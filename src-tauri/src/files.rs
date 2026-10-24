@@ -13,6 +13,15 @@ pub struct FileStamp {
     modified: SystemTime,
 }
 
+pub(crate) fn timestamp(time: std::io::Result<SystemTime>) -> Option<u64> {
+    time.ok()?
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .ok()?
+        .as_millis()
+        .try_into()
+        .ok()
+}
+
 pub fn stamp(path: &Path) -> AppResult<FileStamp> {
     let stat = fs::metadata(path).map_err(|e| e.to_string())?;
     if !stat.is_file() {
@@ -108,14 +117,6 @@ pub fn inspect_with_folders(
                 Ok(value)
             });
             let stat = fs::metadata(&path).ok();
-            let timestamp = |time: std::io::Result<SystemTime>| {
-                time.ok()?
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .ok()?
-                    .as_millis()
-                    .try_into()
-                    .ok()
-            };
             Asset {
                 name: path
                     .file_name()
